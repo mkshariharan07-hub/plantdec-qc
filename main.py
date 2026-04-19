@@ -322,6 +322,21 @@ with col_in:
                             "remedy": "Isolate the specimen immediately. Sterilize all tools. Improve lighting to stabilize photosynthesis.",
                             "prevention": "Ensure balanced irrigation and avoid nighttime foliar wetting."
                         }
+                    
+                    # 5.1 Pesticide/Treatment Categorization
+                    d_lower = kw.get('disease', '').lower()
+                    if any(x in d_lower for x in ['fungal', 'fungus', 'mildew', 'rust', 'rot', 'spot']):
+                        p_cat = "Fungicide"
+                        p_search = "organic+fungicide+for+plants"
+                    elif any(x in d_lower for x in ['bacteria', 'wilt', 'blight']):
+                        p_cat = "Antibactericide"
+                        p_search = "plant+bacterial+treatment"
+                    elif any(x in d_lower for x in ['pest', 'insect', 'aphid', 'mite', 'worm']):
+                        p_cat = "Pesticide"
+                        p_search = "neem+oil+organic+pesticide"
+                    else:
+                        p_cat = "Organic Bio-Stimulant"
+                        p_search = "liquid+seaweed+fertilizer+for+plants"
 
                     res = {
                         "plant": plant_key,
@@ -332,6 +347,8 @@ with col_in:
                         "care": care,
                         "pathology": kw.get('description', 'No descriptive pathology data.'),
                         "rx": raw_rx,
+                        "p_cat": p_cat,
+                        "p_link": f"https://www.amazon.com/s?k={p_search}",
                         "timestamp": datetime.datetime.now().strftime("%H:%M:%S")
                     }
 
@@ -396,7 +413,7 @@ with col_out:
         </div>
         """, unsafe_allow_html=True)
         
-        rtabs = st.tabs(["🧪 Pathology", "📉 Quantum Telemetry", "🌍 Threat Matrix", "📋 Protocols", "📄 Reports"])
+        rtabs = st.tabs(["🧪 Pathology", "📉 Quantum Telemetry", "🌍 Threat Matrix", "🛒 Purchase Nexus", "📋 Protocols", "📄 Reports"])
         
         with rtabs[0]:
             col_p1, col_p2 = st.columns([2, 1])
@@ -415,7 +432,11 @@ with col_out:
                 st.divider()
                 st.markdown("<p class='metric-title'>Micro-Analysis (256px)</p>", unsafe_allow_html=True)
                 if "micro_img" in r:
+                    # Simulation of scanning animation handled in CSS
+                    st.markdown("<div style='position:relative;'>", unsafe_allow_html=True)
+                    st.markdown("<div class='scan-line'></div>", unsafe_allow_html=True)
                     st.image(cv2.cvtColor(r["micro_img"], cv2.COLOR_BGR2RGB), width="stretch")
+                    st.markdown("</div>", unsafe_allow_html=True)
                 st.caption("Auto-localized focus area.")
             
         with rtabs[1]:
@@ -461,7 +482,23 @@ with col_out:
             st.bar_chart(pdf_data.set_index('State'), color="#10b981")
             st.caption(f"Execution Node: {q_data.get('backend', 'N/A')}")
 
-        with rtabs[2]:
+        with rtabs[3]:
+            st.markdown("<h4 style='color:#6ee7b7;'>🛒 Purchase Nexus</h4>", unsafe_allow_html=True)
+            st.write(f"Based on the **{r.get('disease')}** diagnosis, the following treatment category is prioritized:")
+            
+            p_box = f"""
+            <div style="background:rgba(6,182,212,0.1); border:1px solid #06b6d4; padding:20px; border-radius:15px; margin:10px 0;">
+                <h3 style="color:#06b6d4; margin:0;">Target Solution: {r.get('p_cat')}</h3>
+                <p style="opacity:0.8;">Industrial-grade and organic options are curated for this specific pathogen.</p>
+                <a href="{r.get('p_link')}" target="_blank" style="text-decoration:none;">
+                    <button style="background:#06b6d4; color:white; border:none; padding:10px 25px; border-radius:8px; cursor:pointer; font-weight:700;">
+                        SEARCH MARKETPLACE ↗
+                    </button>
+                </a>
+            </div>
+            """
+            st.markdown(p_box, unsafe_allow_html=True)
+            st.info("**Groot's Choice:** We recommend selecting organic Neem-based solutions whenever available to maintain your farm's quantum equilibrium.")
             st.markdown("<h4 style='color:#6ee7b7;'>Global Pathogen Heatmap</h4>", unsafe_allow_html=True)
             # Create dynamic coordinates for a threat map
             map_data = pd.DataFrame(
