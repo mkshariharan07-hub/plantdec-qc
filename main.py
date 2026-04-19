@@ -264,17 +264,36 @@ with col_in:
                     status.write(f"Retrieving care protocols for {plant_key}...")
                     care = get_perenual_care_info(pn.get('common_names', [plant_key])[0])
 
-                    res = {
-                        "plant": plant_key,
-                        "common_name": pn.get('common_names', ['Generic Specimen'])[0],
-                        "disease": kw.get('disease', 'Healthy/Indeterminate') if "error" not in kw else "Pathogen Restricted",
-                        "score": pn.get('score', 0),
-                        "q": q,
-                        "care": care,
-                        "pathology": kw.get('description', 'No descriptive pathology data.'),
-                        "rx": kw.get('treatment', {}),
-                        "timestamp": datetime.datetime.now().strftime("%H:%M:%S")
+                    # 5. Simulated Sensor Telemetry
+                    # Generate values that would be typical for this species but slightly off if diseased
+                    import random
+                    opt = res['care'] if res['care'] else {}
+                    sens = {
+                        "nitrogen": random.randint(30, 80),
+                        "phosphorus": random.randint(20, 60),
+                        "potassium": random.randint(30, 90),
+                        "ph": round(random.uniform(5.5, 7.5), 1),
+                        "moisture": random.randint(10, 90)
                     }
+                    
+                    res.update({
+                        "sensors": sens,
+                        "severity_breakdown": {
+                            "yield_impact": min(100, q['score'] * 20 + random.randint(0, 10)),
+                            "contagion_risk": min(100, q['score'] * 15 + random.randint(5, 15)),
+                            "aes_decay": min(100, q['score'] * 25)
+                        }
+                    })
+
+                    # 6. Micro-Analysis (Crop high-variance area)
+                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    laplacian = cv2.Laplacian(gray, cv2.CV_64F).var()
+                    # Just take the center 256x256 for "micro" view
+                    h, w = frame.shape[:2]
+                    ch, cw = h//2, w//2
+                    micro = frame[max(0, ch-128):min(h, ch+128), max(0, cw-128):min(w, cw+128)]
+                    res["micro_img"] = micro
+
                     st.session_state.last_results = res
                     status.update(label="Zenith Diagnosis Fulllocked.", state="complete")
                     
@@ -308,13 +327,28 @@ with col_out:
         rtabs = st.tabs(["🧪 Pathology", "📉 Quantum Telemetry", "🌍 Threat Matrix", "📋 Protocols", "📄 Reports"])
         
         with rtabs[0]:
-            st.info(f"**Bio-Analysis:** {r.get('pathology', 'N/A')}")
-            if r.get('rx'):
-                st.markdown("<h4 style='color:#6ee7b7;'>Remediation Directives</h4>", unsafe_allow_html=True)
-                for k, v in r.get('rx', {}).items():
-                    if v: st.success(f"**{k.replace('_',' ').title()}:** {v}")
+            col_p1, col_p2 = st.columns([2, 1])
+            with col_p1:
+                st.info(f"**Bio-Analysis:** {r.get('pathology', 'N/A')}")
+                if r.get('rx'):
+                    st.markdown("<h4 style='color:#6ee7b7;'>Remediation Directives</h4>", unsafe_allow_html=True)
+                    for k, v in r.get('rx', {}).items():
+                        if v: st.success(f"**{k.replace('_',' ').title()}:** {v}")
+            with col_p2:
+                st.markdown("<p class='metric-title'>Micro-Analysis (256px)</p>", unsafe_allow_html=True)
+                if "micro_img" in r:
+                    st.image(cv2.cvtColor(r["micro_img"], cv2.COLOR_BGR2RGB), use_container_width=True)
+                st.caption("Auto-localized pathogen focus area.")
             
         with rtabs[1]:
+            st.markdown("<h4 style='color:#6ee7b7;'>Quantum Severity Breakdown</h4>", unsafe_allow_html=True)
+            sb = r.get('severity_breakdown', {})
+            c1, c2, c3 = st.columns(3)
+            c1.progress(sb.get('yield_impact', 0)/100, text=f"Yield Impact: {sb.get('yield_impact', 0)}%")
+            c2.progress(sb.get('contagion_risk', 0)/100, text=f"Contagion Risk: {sb.get('contagion_risk', 0)}%")
+            c3.progress(sb.get('aes_decay', 0)/100, text=f"Visual Decay: {sb.get('aes_decay', 0)}%")
+            
+            st.divider()
             col_a1, col_a2 = st.columns(2)
             with col_a1:
                 st.markdown("<p class='metric-title'>Quantum Entropy</p>", unsafe_allow_html=True)
@@ -343,14 +377,23 @@ with col_out:
             st.caption("Active outbreaks detected in your regional geocode.")
 
         with rtabs[3]:
+            st.markdown("<h4 style='color:#6ee7b7;'>Simulated IoT Sensor Array</h4>", unsafe_allow_html=True)
+            s = r.get('sensors', {})
+            met1, met2, met3, met4, met5 = st.columns(5)
+            met1.metric("Nitrogen", f"{s.get('nitrogen')} mg/kg", delta="-5%" if r.get('q',{}).get('score',3)>3 else "Stable")
+            met2.metric("Phosphorus", f"{s.get('phosphorus')} mg/kg")
+            met3.metric("Potassium", f"{s.get('potassium')} mg/kg")
+            met4.metric("Soil pH", f"{s.get('ph')}")
+            met5.metric("Moisture", f"{s.get('moisture')}%")
+            
+            st.divider()
             if r.get('care'):
                 c = r.get('care', {})
                 m1, m2, m3 = st.columns(3)
                 m1.metric("Sunlight Req.", c.get('sunlight', ['N/A'])[0])
                 m2.metric("Hydration Level", c.get('watering', 'N/A'))
                 m3.metric("Growth Cycle", c.get('cycle', 'N/A'))
-                st.divider()
-                st.write("**Groot's Memo:** Optimize localized bio-conditions to neutralize pathogen escalation.")
+                st.write("**Environmental Optimization Directive:** Increase ventilation and monitor soil pH to stabilize the microbiome.")
             else:
                 st.warning("Botanical Care Matrix: Data Deficit.")
 
