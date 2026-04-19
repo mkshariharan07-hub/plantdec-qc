@@ -476,32 +476,23 @@ with col_out:
             st.divider()
             st.markdown("<h4 style='color:#6ee7b7;'>🚁 Precision Drone Waypoints</h4>", unsafe_allow_html=True)
             st.json(r.get('waypoints', []))
-            st.button("EXPORT MAVLINK / DJI-SDK WAYPOINTS", use_container_width=True)
-            
-        with rtabs[1]:
+            st.butto        with rtabs[2]:
             st.markdown("<h4 style='color:#6ee7b7;'>Qiskit Quantum Bio-Telemetry</h4>", unsafe_allow_html=True)
             q_data = r.get('q', {})
-            
-            # --- Quantum Metrics Row ---
             mcol1, mcol2, mcol3 = st.columns(3)
             mcol1.metric("Gate Depth", q_data.get('depth', 0))
             mcol2.metric("Biological Qubits", "4 (Entangled)")
             mcol3.metric("Entanglement Index", f"{int(q_data.get('entanglement', 0)*100)}%")
             
-            # --- Bloch Sphere Mockup ---
             st.markdown("<p class='metric-title'>Biological Bloch Sphere (Simulated)</p>", unsafe_allow_html=True)
             import plotly.graph_objects as go
             import math
-            import numpy as np
-            
-            # Simulated vector based on entropy
             ent = q_data.get('entropy', 0.5)
             theta = ent * math.pi
             phi = (q_data.get('score', 3) / 5.0) * 2 * math.pi
             vx = math.sin(theta) * math.cos(phi)
             vy = math.sin(theta) * math.sin(phi)
             vz = math.cos(theta)
-            
             fig_bloch = go.Figure(data=[
                 go.Scatter3d(x=[0, vx], y=[0, vy], z=[0, vz], mode='lines+markers', line=dict(color='#10b981', width=8), marker=dict(size=4)),
                 go.Mesh3d(x=[math.cos(i)*math.sin(j) for i in np.linspace(0,2*math.pi,20) for j in np.linspace(0,math.pi,20)],
@@ -512,74 +503,65 @@ with col_out:
             fig_bloch.update_layout(scene=dict(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False), paper_bgcolor="rgba(0,0,0,0)", height=350, margin=dict(l=0,r=0,t=0,b=0))
             st.plotly_chart(fig_bloch, width="stretch")
 
-            # --- Circuit & Probability ---
             st.markdown("<h4 style='color:#6ee7b7;'>Quantum Circuit Ledger</h4>", unsafe_allow_html=True)
             st.code(q_data.get('circuit_str', 'Circuit data missing'), language="text")
             
             st.markdown("<h4 style='color:#34d399;'>Raw Quantum Bit-Flip Breakdown</h4>", unsafe_allow_html=True)
             pdf_data = pd.DataFrame(list(q_data.get('prob', {'0000': 1.0}).items()), columns=['State', 'Probability'])
             st.bar_chart(pdf_data.set_index('State'), color="#10b981")
-            st.caption(f"Execution Node: {q_data.get('backend', 'N/A')}")
 
-        with rtabs[2]:
+        with rtabs[3]:
             st.markdown("<h4 style='color:#6ee7b7;'>🌈 Bio-Spectral Channel Analysis</h4>", unsafe_allow_html=True)
-            st.info("Spectral channels isolate physiological stress in the leaf's chlorophyll and vascular matrix.")
             sc1, sc2, sc3 = st.columns(3)
             with sc1:
                 st.markdown("<p style='color:#ef4444; font-size:0.8rem;'>RED (CHLOROSIS)</p>", unsafe_allow_html=True)
-                st.progress(random.uniform(0.1, 0.9), text="Chlorophyll Decay")
+                st.progress(random.uniform(0.1, 0.9))
             with sc2:
                 st.markdown("<p style='color:#10b981; font-size:0.8rem;'>GREEN (VITALITY)</p>", unsafe_allow_html=True)
-                st.progress(random.uniform(0.1, 0.9), text="Stomatal Health")
+                st.progress(random.uniform(0.1, 0.9))
             with sc3:
                 st.markdown("<p style='color:#3b82f6; font-size:0.8rem;'>BLUE (HYDRATION)</p>", unsafe_allow_html=True)
-                st.progress(random.uniform(0.1, 0.9), text="Water Potential")
+                st.progress(random.uniform(0.1, 0.9))
             
             st.divider()
             st.markdown("<h4 style='color:#6ee7b7;'>🛰 Global Incident Dispatch</h4>", unsafe_allow_html=True)
             if st.button("🚀 ALERT REGIONAL AGRONOMIST", use_container_width=True, type="primary"):
-                st.toast("Bio-Security Alert Dispatched! Case ID: #PULSE-77Q", icon="🚨")
-                st.success("Regional bio-security updated. Dispatching clinical agronomist to your geocode.")
-
-        with rtabs[3]:
-            st.markdown("<h4 style='color:#6ee7b7;'>14-Day Remediation Timeline</h4>", unsafe_allow_html=True)
-            tl = r.get('timeline', {})
-            for day, action in tl.items():
-                st.markdown(f"""
-                <div style='background:rgba(16,185,129,0.05); padding:15px; border-radius:12px; margin-bottom:8px; border-left:4px solid #10b981;'>
-                    <b style='color:#34d399;'>{day}</b>: {action}
-                </div>
-                """, unsafe_allow_html=True)
-            
-            st.divider()
-            if r.get('care'):
-                c = r.get('care', {})
-                st.markdown("<p class='metric-title'>Standard Care Protocol</p>", unsafe_allow_html=True)
-                m1, m2, m3 = st.columns(3)
-                m1.metric("Sunlight Req.", c.get('sunlight', ['N/A'])[0])
-                m2.metric("Hydration Level", c.get('watering', 'N/A'))
-                m3.metric("Growth Cycle", c.get('cycle', 'N/A'))
-            else:
-                st.warning("Botanical Care Matrix: Data Deficit.")
+                st.toast("Bio-Security Alert Dispatched!", icon="🚨")
+                st.success("Regional bio-security updated.")
 
         with rtabs[4]:
+            st.markdown("<h4 style='color:#6ee7b7;'>🛡️ Quantum Bio-Encryption</h4>", unsafe_allow_html=True)
+            st.info("Generating unique encryption hashes using quantum entanglement.")
+            q_hash = base64.b64encode(os.urandom(24)).decode()
+            st.markdown(f"<div style='background:rgba(0,0,0,0.3); padding:20px; border-radius:12px; font-family:monospace; border:1px solid #34d399;'>{q_hash}</div>", unsafe_allow_html=True)
+            st.button("REVOKE ACCESS KEYS", width="stretch")
+
+        with rtabs[5]:
+            st.markdown("<h4 style='color:#6ee7b7;'>🛒 Purchase Nexus</h4>", unsafe_allow_html=True)
+            st.write(f"Prioritizing solutions for **{r.get('p_cat')}**.")
+            st.markdown(f"""
+            <div style="background:rgba(6,182,212,0.1); border:1px solid #06b6d4; padding:20px; border-radius:15px;">
+                <h3 style="color:#06b6d4;">Target: {r.get('p_cat')}</h3>
+                <a href="{r.get('p_link')}" target="_blank"><button style="background:#06b6d4; color:white; border:none; padding:10px 25px; border-radius:8px;">BUY NOW ↗</button></a>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.divider()
+            st.markdown("<h4 style='color:#6ee7b7;'>14-Day Remediation Timeline</h4>", unsafe_allow_html=True)
+            for day, action in r.get('timeline', {}).items():
+                st.success(f"**{day}**: {action}")
+
+        with rtabs[6]:
             if st.button("Download Clinical Dossier"):
                 pdf = FPDF()
                 pdf.add_page()
-                pdf.set_fill_color(1, 22, 13)
-                pdf.rect(0, 0, 210, 297, 'F')
                 pdf.set_text_color(16, 185, 129)
                 pdf.set_font("helvetica", "B", 24)
                 pdf.cell(0, 20, "PLANTPULSE EMERALD DOSSIER", ln=True, align='C')
                 pdf.set_font("helvetica", "", 12)
-                pdf.set_text_color(167, 243, 208)
-                pdf.cell(0, 10, f"Generated: {datetime.datetime.now()}", ln=True, align='C')
-                pdf.ln(10)
-                pdf.set_font("helvetica", "B", 16)
-                pdf.cell(0, 10, f"Target: {r.get('plant', 'N/A')}", ln=True)
-                pdf.set_font("helvetica", "", 12)
-                pdf.multi_cell(0, 10, f"Condition: {r.get('disease', 'N/A')}\nQuantum Risk: {r.get('q', {}).get('label', 'N/A')}\n\nClinical Pathology: {r.get('pathology', 'N/A')}")
-                st.download_button("Download Bio_Report.pdf", pdf.output(), f"Emerald_{r.get('plant', 'scan')}.pdf", "application/pdf")
+                pdf.multi_cell(0, 10, f"Target: {r.get('plant')}\nCondition: {r.get('disease')}\nPathology: {r.get('pathology')}")
+                st.download_button("Download Bio_Report.pdf", pdf.output(), f"Emerald_{r.get('plant')}.pdf", "application/pdf")
+Bio_Report.pdf", pdf.output(), f"Emerald_{r.get('plant', 'scan')}.pdf", "application/pdf")
     else:
         st.info("Scanner idle. Awaiting specimen input...")
 
@@ -591,18 +573,6 @@ with chat_box:
     for m in st.session_state.chat_history:
         st.chat_message(m["role"]).write(m["content"])
 
-        with rtabs[4]:
-            st.markdown("<h4 style='color:#6ee7b7;'>🛡️ Quantum Bio-Encryption</h4>", unsafe_allow_html=True)
-            st.info("Generating unique encryption hashes using quantum entanglement randomness for data security.")
-            q_hash = base64.b64encode(os.urandom(32)).decode()
-            st.markdown(f"""
-            <div style="background:rgba(0,0,0,0.3); padding:20px; border-radius:12px; font-family:monospace; border:1px solid #34d399;">
-                <p style="color:#34d399; margin:0;">SECURE_SCAN_KEY:</p>
-                <p style="word-break:break-all;">{q_hash}</p>
-            </div>
-            """, unsafe_allow_html=True)
-            st.divider()
-            st.checkbox("Enable End-to-End Encrypted Sync")
-            st.button("REVOKE ACCESS KEYS")
+        st.chat_input("Processing biometric signal...", disabled=True)
 
 st.caption("PlantPulse Zenith v5.0 | Enterprise Agritech Strategy | © 2026")
