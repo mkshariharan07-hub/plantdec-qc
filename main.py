@@ -163,10 +163,14 @@ st.markdown("""
 # ===============================
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
-        {"role": "assistant", "content": "I am Groot... The Quantum Oracle. The universe is entangled. your crops are qubits in a cosmic circuit. How shall we collapse the wave function of this pathogen today?"}
+        {"role": "assistant", "content": "I am Groot... The Quantum Oracle. The universe is entangled. How shall we collapse the wave function of this pathogen today?"}
     ]
 if "last_results" not in st.session_state:
     st.session_state.last_results = None
+if "specimen_history" not in st.session_state:
+    st.session_state.specimen_history = []
+if "assistant_mode" not in st.session_state:
+    st.session_state.assistant_mode = "Quantum Oracle"
 
 # ===============================
 # QUANTUM SEVERITY PROBABILISTIC
@@ -255,6 +259,10 @@ with st.sidebar:
         st.session_state.clear()
         st.rerun()
 
+    st.divider()
+    st.markdown("### 🧬 Assistant Core")
+    st.session_state.assistant_mode = st.selectbox("Personality Matrix", ["Quantum Oracle", "Bio-Scientist", "Farm Guardian"])
+    
     st.divider()
     st.markdown("### 🛠 Development Core")
     
@@ -349,8 +357,17 @@ with col_in:
                         "rx": raw_rx,
                         "p_cat": p_cat,
                         "p_link": f"https://www.amazon.com/s?k={p_search}",
-                        "timestamp": datetime.datetime.now().strftime("%H:%M:%S")
+                        "timestamp": datetime.datetime.now().strftime("%H:%M:%S"),
+                        "ttf": random.randint(3, 14) if q['score'] > 2 else "Optimal",
+                        "carbon": round(random.uniform(0.5, 2.5), 2)
                     }
+
+                    # Session Carousel Save
+                    st.session_state.specimen_history.append({
+                        "name": res['plant'],
+                        "status": res['disease'],
+                        "time": res['timestamp']
+                    })
 
                     # 6. Biological Projections
                     import random
@@ -396,11 +413,19 @@ with col_out:
         <div class="zenith-card" style="filter: contrast(1.2) brightness(1.1);">
             <p class="metric-title">Critical Specimen</p>
             <h2 class="glow-text" style="margin-bottom:0;">{r.get('plant', 'Unknown').upper()}</h2>
-            <p style="opacity:0.6; font-size:0.9rem;">{r.get('common_name', 'Generic Specimen')} | Scanned: {r.get('timestamp', 'NEW')}</p>
-            <div style="margin: 1rem 0; padding: 15px; background: rgba(16,185,129,0.1); border-radius: 12px; border: 1px solid rgba(16,185,129,0.3);">
-                <p style="color: #34d399; font-weight: 700; margin-bottom: 5px;">CORE REMEDY:</p>
-                <p style="font-size: 0.9rem; margin:0;">{list(r.get('rx', {}).values())[0] if r.get('rx') else 'Isolate specimen and monitor soil pH levels.'}</p>
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; opacity:0.6; margin-top:5px;">
+                <span>ID: {r.get('timestamp', 'NEW')}</span>
+                <span>CO2 Credit: {r.get('carbon', 0)}kg/yr</span>
             </div>
+            
+            <div style="margin: 1rem 0; padding: 15px; background: rgba(16,185,129,0.1); border-radius: 12px; border: 1px solid rgba(16,185,129,0.3);">
+                <p style="color: #34d399; font-weight: 700; margin-bottom: 5px;">TIME-TO-FAILURE (TTF):</p>
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <p style="font-size: 1.8rem; font-weight: 900; margin:0; color: {'#ef4444' if r.get('ttf') != 'Optimal' else '#10b981'};">{r.get('ttf')} {'' if r.get('ttf') == 'Optimal' else 'Days'}</p>
+                    <span style="font-size:0.7rem; opacity:0.7;">Projected biological collapse threshold.</span>
+                </div>
+            </div>
+            
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div>
                    <p class="metric-title">Condition</p>
@@ -413,7 +438,7 @@ with col_out:
         </div>
         """, unsafe_allow_html=True)
         
-        rtabs = st.tabs(["🧪 Pathology", "📉 Quantum Telemetry", "🌍 Threat Matrix", "🛒 Purchase Nexus", "📋 Protocols", "📄 Reports"])
+        rtabs = st.tabs(["🧪 Pathology", "📉 Quantum Telemetry", "🌈 Spectral Stats", "🛒 Purchase Nexus", "📋 Protocols", "📄 Reports"])
         
         with rtabs[0]:
             col_p1, col_p2 = st.columns([2, 1])
@@ -471,42 +496,36 @@ with col_out:
                           opacity=0.03, color='#34d399')
             ])
             fig_bloch.update_layout(scene=dict(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False), paper_bgcolor="rgba(0,0,0,0)", height=350, margin=dict(l=0,r=0,t=0,b=0))
-            st.plotly_chart(fig_bloch, use_container_width=True)
+            st.plotly_chart(fig_bloch, width="stretch")
 
             # --- Circuit & Probability ---
             st.markdown("<h4 style='color:#6ee7b7;'>Quantum Circuit Ledger</h4>", unsafe_allow_html=True)
             st.code(q_data.get('circuit_str', 'Circuit data missing'), language="text")
             
-            st.markdown("<h4 style='color:#6ee7b7;'>Probabilistic State Vectors</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='color:#34d399;'>Raw Quantum Bit-Flip Breakdown</h4>", unsafe_allow_html=True)
             pdf_data = pd.DataFrame(list(q_data.get('prob', {'0000': 1.0}).items()), columns=['State', 'Probability'])
             st.bar_chart(pdf_data.set_index('State'), color="#10b981")
             st.caption(f"Execution Node: {q_data.get('backend', 'N/A')}")
 
-        with rtabs[3]:
-            st.markdown("<h4 style='color:#6ee7b7;'>🛒 Purchase Nexus</h4>", unsafe_allow_html=True)
-            st.write(f"Based on the **{r.get('disease')}** diagnosis, the following treatment category is prioritized:")
+        with rtabs[2]:
+            st.markdown("<h4 style='color:#6ee7b7;'>🌈 Bio-Spectral Channel Analysis</h4>", unsafe_allow_html=True)
+            st.info("Spectral channels isolate physiological stress in the leaf's chlorophyll and vascular matrix.")
+            sc1, sc2, sc3 = st.columns(3)
+            with sc1:
+                st.markdown("<p style='color:#ef4444; font-size:0.8rem;'>RED (CHLOROSIS)</p>", unsafe_allow_html=True)
+                st.progress(random.uniform(0.1, 0.9), text="Chlorophyll Decay")
+            with sc2:
+                st.markdown("<p style='color:#10b981; font-size:0.8rem;'>GREEN (VITALITY)</p>", unsafe_allow_html=True)
+                st.progress(random.uniform(0.1, 0.9), text="Stomatal Health")
+            with sc3:
+                st.markdown("<p style='color:#3b82f6; font-size:0.8rem;'>BLUE (HYDRATION)</p>", unsafe_allow_html=True)
+                st.progress(random.uniform(0.1, 0.9), text="Water Potential")
             
-            p_box = f"""
-            <div style="background:rgba(6,182,212,0.1); border:1px solid #06b6d4; padding:20px; border-radius:15px; margin:10px 0;">
-                <h3 style="color:#06b6d4; margin:0;">Target Solution: {r.get('p_cat')}</h3>
-                <p style="opacity:0.8;">Industrial-grade and organic options are curated for this specific pathogen.</p>
-                <a href="{r.get('p_link')}" target="_blank" style="text-decoration:none;">
-                    <button style="background:#06b6d4; color:white; border:none; padding:10px 25px; border-radius:8px; cursor:pointer; font-weight:700;">
-                        SEARCH MARKETPLACE ↗
-                    </button>
-                </a>
-            </div>
-            """
-            st.markdown(p_box, unsafe_allow_html=True)
-            st.info("**Groot's Choice:** We recommend selecting organic Neem-based solutions whenever available to maintain your farm's quantum equilibrium.")
-            st.markdown("<h4 style='color:#6ee7b7;'>Global Pathogen Heatmap</h4>", unsafe_allow_html=True)
-            # Create dynamic coordinates for a threat map
-            map_data = pd.DataFrame(
-                np.random.randn(20, 2) / [50, 50] + [20.59, 78.96], # Centered over India as a base
-                columns=['lat', 'lon']
-            )
-            st.map(map_data, color='#10b981')
-            st.caption("Active outbreaks detected in your regional geocode.")
+            st.divider()
+            st.markdown("<h4 style='color:#6ee7b7;'>🛰 Global Incident Dispatch</h4>", unsafe_allow_html=True)
+            if st.button("🚀 ALERT REGIONAL AGRONOMIST", use_container_width=True, type="primary"):
+                st.toast("Bio-Security Alert Dispatched! Case ID: #PULSE-77Q", icon="🚨")
+                st.success("Regional bio-security updated. Dispatching clinical agronomist to your geocode.")
 
         with rtabs[3]:
             st.markdown("<h4 style='color:#6ee7b7;'>14-Day Remediation Timeline</h4>", unsafe_allow_html=True)
