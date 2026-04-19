@@ -14,7 +14,17 @@ RULE: Any change to extract_features() is made HERE only.
 import cv2
 import numpy as np
 import os
+import requests
+import base64
 from typing import Optional
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# ── API Keys ──────────────────────────────────────────────────────────────────
+PLANTNET_API_KEY = os.getenv("PLANTNET_API_KEY")
+CROP_HEALTH_API_KEY = os.getenv("CROP_HEALTH_API_KEY")
+PERENUAL_API_KEY = os.getenv("PERENUAL_API_KEY")
 
 # ── Artifact paths (one place to change if you move files) ────────────────────
 MODEL_PATH  = "plant_model.pkl"
@@ -309,3 +319,101 @@ def predict_image(img_bgr: np.ndarray, model, scaler=None) -> dict:
         "emoji":        info["emoji"],
         "feature_mode": mode,   # 'raw_pixels' or 'histogram'
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EXTERNAL API CONNECTORS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def identify_plant_with_plantnet(img_bgr: np.ndarray) -> dict:
+    """Identify plant using PlantNet API (Scientific & Common names)."""
+    if not PLANTNET_API_KEY:
+        return {"error": "PlantNet API Key missing in .env"}
+    
+    try:
+        _, img_encoded = cv2.imencode(".jpg", img_bgr)
+        files = [('images', ('image.jpg', img_encoded.tobytes()))]
+        data = {'organs': ['auto']}
+        
+        # 'all' searches across all floras for maximum coverage
+        url = f"https://my-api.plantnet.org/v2/identify/all?api-key={PLANTNET_API_KEY}"
+        response = requests.post(url, files=files, data=data, timeout=15)
+        response.raise_for_status()
+        
+        res = response.json()
+        if not res.get('results'):
+            return {"error": "No matches found."}
+            
+        best = res['results'][0]
+        species = best.get('species', {})
+        return {
+            "scientific_name": species.get('scientificNameWithoutAuthor'),
+            "common_names": species.get('commonNames', []),
+            "score": round(best.get('score', 0) * 100, 1),
+            "family": species.get('family', {}).get('scientificNameWithoutAuthor'),
+            "genus": species.get('genus', {}).get('scientificNameWithoutAuthor')
+        }
+    except Exception as e:
+        return {"error": f"PlantNet Error: {str(e)}"}
+
+
+def identify_disease_with_kindwise(img_bgr: np.ndarray) -> dict:
+    """Identify diseases/health using Kindwise Crop Health API."""
+    if not CROP_HEALTH_API_KEY:
+        return {"error": "Crop Health API Key missing in .env"}
+
+    try:
+        _, img_encoded = cv2.imencode(".jpg", img_bgr)
+        img_base64 = base64.b64encode(img_encoded.tobytes()).decode('ascii')
+        
+        url = "https://api.crop.health/v1/identification"
+        headers = {
+            "Api-Key": CROP_HEALTH_API_KEY,
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "images": [img_base64],
+            "latitude": 49.195,
+            "longitude": 16.606,
+            "similar_images": True
+        }
+        
+        response = requests.post(url, headers=headers, json=payload, timeout=20)
+        response.raise_for_status()
+        
+        data = response.json()
+        result = data.get("result", {})
+        suggestions = result.get("disease", {}).get("suggestions", [])
+        
+        if not suggestions:
+            # Check if it identified healthy
+            is_healthy = result.get("is_healthy", {}).get("binary", False)
+            if is_healthy:
+                return {"healthy": True, "probability": result.get("is_healthy", {}).get("probability", 1.0)}
+            return {"error": "No disease identified."}
+            
+        best = suggestions[0]
+        return {
+            "disease": best.get("name"),
+            "probability": round(best.get("probability", 0) * 100, 1),
+            "details": best.get("details", {}),
+            "treatment": best.get("details", {}).get("treatment", {}),
+            "description": best.get("details", {}).get("description", "")
+        }
+    except Exception as e:
+        return {"error": f"Kindwise Error: {str(e)}"}
+
+def get_perenual_care_info(common_name: str) -> dict:
+    """Fetch additional care info using Perenual API."""
+    if not PERENUAL_API_KEY:
+        return {}
+    
+    url = f"https://perenual.com/api/species-list?key={PERENUAL_API_KEY}&q={common_name}"
+    try:
+        response = requests.get(url, timeout=10)
+        data = response.json()
+        if data.get('data'):
+            return data['data'][0]
+    except:
+        pass
+    return {}
