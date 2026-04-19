@@ -277,15 +277,15 @@ with col_out:
         st.markdown(f"""
         <div class="zenith-card">
             <p class="metric-title">Detected Specimen</p>
-            <h2 class="glow-text" style="margin-bottom:0;">{r['plant'].upper()}</h2>
-            <p style="opacity:0.6; font-size:0.9rem;">{r['common_name']} | ID: {r['timestamp']}</p>
+            <h2 class="glow-text" style="margin-bottom:0;">{r.get('plant', 'Unknown').upper()}</h2>
+            <p style="opacity:0.6; font-size:0.9rem;">{r.get('common_name', 'Generic Specimen')} | ID: {r.get('timestamp', 'NEW_SCAN')}</p>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
                 <div>
                    <p class="metric-title">Pathogen</p>
-                   <p style="font-size:1.4rem; font-weight:700;">{r['disease'].title()}</p>
+                   <p style="font-size:1.4rem; font-weight:700;">{r.get('disease', 'Healthy').title()}</p>
                 </div>
-                <span class="badge badge-{'critical' if r['q']['score'] > 3 else 'warning' if r['q']['score'] > 2 else 'optimal'}">
-                    {r['q']['label']} Risk
+                <span class="badge badge-{'critical' if r.get('q', {}).get('score', 3) > 3 else 'warning' if r.get('q', {}).get('score', 3) > 2 else 'optimal'}">
+                    {r.get('q', {}).get('label', 'Baseline')} Risk
                 </span>
             </div>
         </div>
@@ -294,26 +294,27 @@ with col_out:
         rtabs = st.tabs(["🧪 Pathology", "📈 Analytics", "📋 Workflow", "📄 Reports"])
         
         with rtabs[0]:
-            st.info(f"**Bio-Analysis:** {r['pathology']}")
-            if r['rx']:
+            st.info(f"**Bio-Analysis:** {r.get('pathology', 'N/A')}")
+            if r.get('rx'):
                 st.markdown("#### Clinical Remediation")
-                for k, v in r['rx'].items():
+                for k, v in r.get('rx', {}).items():
                     if v: st.write(f"**{k.replace('_',' ').title()}:** {v}")
             
         with rtabs[1]:
             col_a1, col_a2 = st.columns(2)
             with col_a1:
                 st.markdown("<p class='metric-title'>Quantum Entropy</p>", unsafe_allow_html=True)
-                st.markdown(f"<p class='metric-value'>{r['q'].get('entropy', 0.5):.4f}</p>", unsafe_allow_html=True)
+                st.markdown(f"<p class='metric-value'>{r.get('q', {}).get('entropy', 0.5):.4f}</p>", unsafe_allow_html=True)
             with col_a2:
                 st.markdown("<p class='metric-title'>ID Confidence</p>", unsafe_allow_html=True)
-                st.markdown(f"<p class='metric-value'>{r['score']}%</p>", unsafe_allow_html=True)
+                st.markdown(f"<p class='metric-value'>{r.get('score', 0)}%</p>", unsafe_allow_html=True)
             
             st.markdown("#### Quantum Probability Matrix")
             # Convert dict to dataframe for chart
-            pdf = pd.DataFrame(list(r['q']['prob'].items()), columns=['State', 'Probability'])
-            st.bar_chart(pdf.set_index('State'), color="#10b981")
-            st.caption(f"Backend Node: {r['q']['backend']}")
+            q_data = r.get('q', {})
+            pdf_data = pd.DataFrame(list(q_data.get('prob', {'0000': 1.0}).items()), columns=['State', 'Probability'])
+            st.bar_chart(pdf_data.set_index('State'), color="#10b981")
+            st.caption(f"Backend Node: {q_data.get('backend', 'N/A')}")
 
         with rtabs[2]:
             if r['care']:
@@ -341,10 +342,10 @@ with col_out:
                 pdf.cell(0, 10, f"Timestamp: {datetime.datetime.now()}", ln=True, align='C')
                 pdf.ln(10)
                 pdf.set_font("helvetica", "B", 16)
-                pdf.cell(0, 10, f"Specimen: {r['plant']}", ln=True)
+                pdf.cell(0, 10, f"Specimen: {r.get('plant', 'N/A')}", ln=True)
                 pdf.set_font("helvetica", "", 12)
-                pdf.multi_cell(0, 10, f"Diagnosis: {r['disease']}\nThreat Level: {r['q']['label']}\nPathology: {r['pathology']}")
-                st.download_button("Download Zenith_Dossier.pdf", pdf.output(), f"Pulse_{r['plant']}.pdf", "application/pdf")
+                pdf.multi_cell(0, 10, f"Diagnosis: {r.get('disease', 'N/A')}\nThreat Level: {r.get('q', {}).get('label', 'N/A')}\nPathology: {r.get('pathology', 'N/A')}")
+                st.download_button("Download Zenith_Dossier.pdf", pdf.output(), f"Pulse_{r.get('plant', 'scan')}.pdf", "application/pdf")
     else:
         st.info("Scanner idle. Awaiting specimen input...")
 
