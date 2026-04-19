@@ -1,8 +1,8 @@
 """
-app.py — PlantPulse AI + Quantum (Full-Cloud Enterprise v4)
+main.py — PlantPulse AI + Quantum (Enterprise Zenith v5)
 ======================================================
-Comprehensive Plant Diagnostic Suite
-Pure Cloud-API Pipeline: PlantNet + Kindwise
+Professional Agritech Diagnostic Console
+Pure Cloud + Quantum Entanglement Logic
 """
 
 import streamlit as st
@@ -14,6 +14,7 @@ import datetime
 import base64
 import requests
 import traceback
+import pandas as pd
 from fpdf import FPDF
 from dotenv import load_dotenv
 
@@ -32,7 +33,7 @@ try:
         identify_plant_with_plantnet,
         identify_disease_with_kindwise,
         get_perenual_care_info,
-        get_disease_info # Still useful for emojis/colors if needed
+        get_disease_info
     )
 except ImportError as e:
     st.error(f"Failed to import core utilities: {e}")
@@ -44,68 +45,86 @@ load_dotenv()
 # PAGE CONFIG
 # ===============================
 st.set_page_config(
-    page_title="PlantPulse Cloud Console",
+    page_title="PlantPulse Zenith",
     page_icon="🌿",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # ===============================
-# STYLING
+# STYLING (Zenith Design System)
 # ===============================
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
     
     .stApp { 
-        background-color: #050a12;
+        background-color: #03070a;
         background-image: 
-            radial-gradient(at 0% 0%, hsla(160,100%,10%,1) 0, transparent 50%), 
-            radial-gradient(at 100% 0%, hsla(160,100%,10%,1) 0, transparent 50%);
-        color: white; 
+            radial-gradient(circle at 20% 30%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+            radial-gradient(circle at 80% 70%, rgba(6, 182, 212, 0.05) 0%, transparent 40%);
+        color: #e2e8f0; 
+        font-family: 'Outfit', sans-serif;
     }
 
     /* Falling Leaf Animation */
-    @keyframes fall {
-        0% { transform: translateY(-100px) rotate(0deg); opacity: 0; }
-        10% { opacity: 1; }
-        90% { opacity: 1; }
-        100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+    @keyframes blossom {
+        0% { transform: translateY(-10vh) rotate(0deg) scale(0.5); opacity: 0; }
+        20% { opacity: 0.6; }
+        80% { opacity: 0.6; }
+        100% { transform: translateY(110vh) rotate(720deg) scale(1); opacity: 0; }
     }
-    .leaf-pix {
-        position: fixed; top: -50px; z-index: 1000; pointer-events: none;
-        animation: fall 10s linear infinite; font-size: 24px;
+    .blossom-leaf {
+        position: fixed; top: -5vh; z-index: 1000; pointer-events: none;
+        animation: blossom 12s linear infinite; font-size: 28px; filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.4));
     }
 
-    .glass-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
+    /* Zenith Glassmorphism Cards */
+    .zenith-card {
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 24px;
         padding: 1.5rem;
-        margin-bottom: 1rem;
+        margin-bottom: 1.2rem;
+        transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+    .zenith-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(16, 185, 129, 0.3);
+        background: rgba(15, 23, 42, 0.8);
     }
 
-    .metric-value {
-        font-size: 2rem;
-        font-weight: 700;
+    .glow-text {
         color: #10b981;
+        text-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+        font-weight: 700;
     }
 
-    .severity-badge {
-        padding: 4px 12px;
-        border-radius: 50px;
-        font-weight: 700;
-        font-size: 0.8rem;
+    .metric-title { font-size: 0.85rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 1.5px; }
+    .metric-value { font-size: 2.4rem; font-weight: 800; }
+
+    /* Custom Status Badges */
+    .badge {
+        padding: 6px 16px; border-radius: 100px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;
     }
-    .sev-high { background: #ef4444; }
-    .sev-medium { background: #f59e0b; }
-    .sev-low { background: #10b981; }
+    .badge-critical { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444; }
+    .badge-warning { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid #f59e0b; }
+    .badge-optimal { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981; }
+
+    /* Better tabs */
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; background-color: transparent; }
+    .stTabs [data-baseweb="tab"] {
+        height: 45px; border-radius: 12px; background-color: rgba(255,255,255,0.03); color: white; border: 1px solid rgba(255,255,255,0.05); padding: 0 20px;
+    }
+    .stTabs [aria-selected="true"] { background-color: rgba(16, 185, 129, 0.1) !important; border-color: #10b981 !important; color: #10b981 !important; }
 </style>
-<div class="leaf-pix" style="left:10%; animation-delay: 0s;">🌿</div>
-<div class="leaf-pix" style="left:30%; animation-delay: 2s;">🍃</div>
-<div class="leaf-pix" style="left:70%; animation-delay: 1s;">🌱</div>
-<div class="leaf-pix" style="left:90%; animation-delay: 4s;">🌿</div>
+
+<div class="blossom-leaf" style="left:5%; animation-delay: 0s;">🌿</div>
+<div class="blossom-leaf" style="left:25%; animation-delay: 3s;">🍃</div>
+<div class="blossom-leaf" style="left:45%; animation-delay: 7s;">🌱</div>
+<div class="blossom-leaf" style="left:65%; animation-delay: 1s;">🌿</div>
+<div class="blossom-leaf" style="left:85%; animation-delay: 5s;">🍃</div>
 """, unsafe_allow_html=True)
 
 # ===============================
@@ -113,33 +132,33 @@ st.markdown("""
 # ===============================
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
-        {"role": "assistant", "content": "Welcome to PlantPulse Cloud. I use PlantNet and Kindwise for high-accuracy diagnostics."}
+        {"role": "assistant", "content": "Groot online. I am at your service for clinical botanical analysis. Inhale the data... Exhale the cure."}
     ]
 if "last_results" not in st.session_state:
     st.session_state.last_results = None
 
 # ===============================
-# QUANTUM SEVERITY 
+# QUANTUM SEVERITY PROBABILISTIC
 # ===============================
 def analyze_severity_quantum(img: np.ndarray, backend_pref: str):
     if not HAS_QUANTUM:
-        return {"score": 3, "label": "Cloud Baseline", "state": "1010", "backend": "sim"}
+        return {"score": 3, "label": "Simulated Matrix", "prob": {"0000": 0.5, "1111": 0.5}, "backend": "sim"}
         
     try:
         small = cv2.resize(img, (64, 64))
         gray  = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY).astype(float) / 255.0
-        mean_val = float(np.mean(gray))
+        entropy = -np.sum(gray * np.log2(gray + 1e-7)) / 4096.0
         
         qr = QuantumRegister(4, 'q')
         cr = ClassicalRegister(4, 'c')
         qc = QuantumCircuit(qr, cr)
         from math import pi
-        qc.ry(mean_val * pi, qr[0])
+        qc.ry(entropy * pi, qr[0])
         qc.h(qr[1])
         qc.cx(qr[0], qr[2])
+        qc.cx(qr[1], qr[3])
         qc.measure(qr, cr)
 
-        counts = {}
         try:
             TOKEN = os.getenv("IBM_QUANTUM_TOKEN", "")
             if TOKEN and len(TOKEN) > 10:
@@ -148,7 +167,8 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str):
                 qc_t = transpile(qc, backend)
                 sampler = Sampler(mode=backend)
                 job = sampler.run([qc_t], shots=1024)
-                counts = job.result()[0].data.c.get_counts()
+                result = job.result()[0]
+                counts = result.data.c.get_counts()
                 backend_name = backend.name
             else:
                 raise ValueError("No token")
@@ -157,150 +177,195 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str):
             sampler = StatevectorSampler()
             result = sampler.run([qc]).result()[0]
             counts = result.data.c.get_counts()
-            backend_name = "local-sim"
+            backend_name = "q-local-sim"
 
+        total = sum(counts.values())
+        probs = {k: v/total for k, v in counts.items()}
         dom_state = max(counts, key=counts.get)
         if isinstance(dom_state, int): dom_state = format(dom_state, '04b')
         score = dom_state.count('1') + 1
-        labels = ["Healthy Condition", "Early Warning", "Moderate Infection", "Advanced Decay", "Critical Failure"]
-        return {"score": score, "label": labels[min(score-1, 4)], "state": dom_state, "backend": backend_name}
+        labels = ["Optimal", "Incipient", "Moderate", "Severe", "Critical"]
+        return {"score": score, "label": labels[min(score-1, 4)], "prob": probs, "backend": backend_name, "entropy": entropy}
     except Exception as e:
-        return {"score": 3, "label": "Local Fallback", "state": "0000", "backend": "error", "err": str(e)}
+        return {"score": 3, "label": "Analysis Uncertain", "prob": {"Error": 1.0}, "backend": "error"}
 
 # ===============================
-# UI PANELS
+# SIDEBAR
 # ===============================
 with st.sidebar:
-    st.image("https://img.icons8.com/color/144/leaf.png", width=80)
-    st.title("Cloud Intelligence")
+    st.image("https://img.icons8.com/bubbles/200/leaf.png", width=120)
+    st.markdown("<h2 class='glow-text'>PLANTPULSE ZENITH</h2>", unsafe_allow_html=True)
     
-    q_backend = st.selectbox("Quantum Engine", ["Dynamic (Real HW)", "Simulator Only"])
+    with st.expander("🛠 Matrix Configuration", expanded=False):
+        q_eng = st.selectbox("Quantum Engine", ["Dynamic (Hybrid)", "Simulator Optimized"])
+        api_depth = st.slider("Discovery Depth", 1, 10, 7)
     
     st.divider()
-    st.write("### Cloud Status")
-    st.status("PlantNet V2: Live", state="complete")
-    st.status("Kindwise Crop: Live", state="complete")
-    st.status("Perenual Care: Live", state="complete")
+    st.markdown("### Clinical Status")
+    st.success("🛰 Core Satellites: ACTIVE")
+    st.info("🧬 Pathogen Matrix: SYNCED")
+    st.warning("🍂 Bio-Telemetry: HIGH LOAD")
     
-    if st.button("Reset Matrix"):
+    if st.button("Reset Session Matrix", use_container_width=True):
         st.session_state.clear()
         st.rerun()
 
-st.title("🌿 PlantPulse Cloud")
-st.write("Professional Diagnostic Engine | Powered by PlantNet & Kindwise")
+# ===============================
+# MAIN UI
+# ===============================
+st.markdown("<h1 style='text-align:center; font-size: 3.5rem;' class='glow-text'>🌿 PlantPulse <span style='color:white'>Zenith</span></h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center; opacity:0.6; letter-spacing:2px;'>ENTERPRISE BOTANICAL INTELLIGENCE & QUANTUM ANALYTICS</p>", unsafe_allow_html=True)
 
-col_left, col_right = st.columns([1, 1], gap="large")
+col_in, col_out = st.columns([1, 1], gap="large")
 
-with col_left:
-    st.subheader("Image Ingestion")
-    tabs = st.tabs(["📁 Local Upload", "📷 Camera Capture"])
+with col_in:
+    st.markdown("<div class='zenith-card'>", unsafe_allow_html=True)
+    st.subheader("📡 Specimen Acquisition")
+    tabs = st.tabs(["📁 Digital Dossier", "📷 Bio-Scanner"])
+    
     img_bytes = None
     with tabs[0]:
-        uf = st.file_uploader("Upload leaf...", type=["jpg", "png", "jpeg"])
+        uf = st.file_uploader("Ingest specimen data...", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
         if uf: img_bytes = uf.getvalue()
     with tabs[1]:
-        cf = st.camera_input("Snapshot")
+        cf = st.camera_input("Scanner activation")
         if cf: img_bytes = cf.getvalue()
 
     if img_bytes:
         frame = decode_bytes_to_bgr(img_bytes)
         if frame is not None:
             st.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), use_container_width=True)
-            if st.button("EXECUTE CLOUD DIAGNOSTIC", use_container_width=True, type="primary"):
-                with st.status("Connecting to global botanical servers...", expanded=True) as status:
-                    # 1. Identification
-                    status.write("Running PlantNet Species Identification...")
+            if st.button("🚀 INITIATE ZENITH SCAN", use_container_width=True, type="primary"):
+                with st.status("Harmonizing neural and quantum vectors...", expanded=True) as status:
+                    status.write("Species ID phase initiated...")
                     pn = identify_plant_with_plantnet(frame)
                     
-                    # 2. Disease
-                    status.write("Running Kindwise Pathogen Analysis...")
+                    status.write("Pathogen matrix synchronization...")
                     kw = identify_disease_with_kindwise(frame)
                     
-                    # 3. Quantum
-                    status.write("Calculating Quantum Severity Level...")
-                    q = analyze_severity_quantum(frame, q_backend)
+                    status.write("Quantum state entanglement check...")
+                    q = analyze_severity_quantum(frame, "Simulator Only" if q_eng == "Simulator Optimized" else "Dynamic")
                     
-                    # 4. Care Info
-                    plant_name = pn.get('scientific_name', 'Unknown Plant')
-                    status.write(f"Fetching species profile for {plant_name}...")
-                    care = get_perenual_care_info(pn.get('common_names', [plant_name])[0])
+                    plant_key = pn.get('scientific_name', 'Unknown')
+                    status.write(f"Retrieving care protocols for {plant_key}...")
+                    care = get_perenual_care_info(pn.get('common_names', [plant_key])[0])
 
                     res = {
-                        "plant": plant_name,
-                        "common_name": pn.get('common_names', ['N/A'])[0],
-                        "disease": kw.get('disease', 'Healthy/Undetected') if "error" not in kw else "Unknown",
-                        "confidence": pn.get('score', 0),
-                        "q_sev": q,
+                        "plant": plant_key,
+                        "common_name": pn.get('common_names', ['Generic Specimen'])[0],
+                        "disease": kw.get('disease', 'Healthy/Indeterminate') if "error" not in kw else "Pathogen Restricted",
+                        "score": pn.get('score', 0),
+                        "q": q,
                         "care": care,
-                        "description": kw.get('description', 'No detailed description available.'),
-                        "treatment": kw.get('treatment', {})
+                        "pathology": kw.get('description', 'No descriptive pathology data.'),
+                        "rx": kw.get('treatment', {}),
+                        "timestamp": datetime.datetime.now().strftime("%H:%M:%S")
                     }
                     st.session_state.last_results = res
-                    status.update(label="Diagnostic Completed Successfully!", state="complete")
+                    status.update(label="Zenith Diagnosis Fulllocked.", state="complete")
                     
                     st.session_state.chat_history.append({
                         "role": "assistant",
-                        "content": f"I've identified this as **{plant_name}**. The condition appears to be **{res['disease']}** with a **{q['label']}** severity. How can I help with the treatment?"
+                        "content": f"Scan for **{plant_key}** locked. Pathology indicates **{res['disease']}**. I've established a {q['label']} threat level. Commencing remediation planning."
                     })
+    st.markdown("</div>", unsafe_allow_html=True)
 
-with col_right:
-    st.subheader("Diagnostic Bio-Feed")
+with col_out:
     if st.session_state.last_results:
         r = st.session_state.last_results
         
         st.markdown(f"""
-        <div class="glass-card">
-            <h4>{r['plant']}</h4>
-            <p style='color:#94a3b8; font-size:0.9rem;'>{r['common_name']}</p>
-            <p>Condition: <b>{r['disease'].title()}</b></p>
-            <span class="severity-badge {'sev-high' if r['q_sev']['score'] > 3 else 'sev-medium' if r['q_sev']['score'] > 1 else 'sev-low'}">
-                {r['q_sev']['label']}
-            </span>
+        <div class="zenith-card">
+            <p class="metric-title">Detected Specimen</p>
+            <h2 class="glow-text" style="margin-bottom:0;">{r['plant'].upper()}</h2>
+            <p style="opacity:0.6; font-size:0.9rem;">{r['common_name']} | ID: {r['timestamp']}</p>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
+                <div>
+                   <p class="metric-title">Pathogen</p>
+                   <p style="font-size:1.4rem; font-weight:700;">{r['disease'].title()}</p>
+                </div>
+                <span class="badge badge-{'critical' if r['q']['score'] > 3 else 'warning' if r['q']['score'] > 2 else 'optimal'}">
+                    {r['q']['label']} Risk
+                </span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
         
-        rtabs = st.tabs(["Pathology", "Care Profile", "Export"])
+        rtabs = st.tabs(["🧪 Pathology", "📈 Analytics", "📋 Workflow", "📄 Reports"])
         
         with rtabs[0]:
-            st.write(f"**Species Score:** {r['confidence']}%")
-            st.info(f"**Diagnostic Description:** {r['description']}")
-            if r['treatment']:
-                st.write("**Treatment Protocols:**")
-                st.write(r['treatment'])
+            st.info(f"**Bio-Analysis:** {r['pathology']}")
+            if r['rx']:
+                st.markdown("#### Clinical Remediation")
+                for k, v in r['rx'].items():
+                    if v: st.write(f"**{k.replace('_',' ').title()}:** {v}")
             
         with rtabs[1]:
-            if r['care']:
-                st.write(f"**Watering:** {r['care'].get('watering', 'N/A')}")
-                st.write(f"**Sunlight:** {', '.join(r['care'].get('sunlight', ['N/A']))}")
-                st.write(f"**Lifecycle:** {r['care'].get('cycle', 'N/A')}")
-            else:
-                st.warning("Perenual Care database returned no specific matches for this species.")
+            col_a1, col_a2 = st.columns(2)
+            with col_a1:
+                st.markdown("<p class='metric-title'>Quantum Entropy</p>", unsafe_allow_html=True)
+                st.markdown(f"<p class='metric-value'>{r['q'].get('entropy', 0.5):.4f}</p>", unsafe_allow_html=True)
+            with col_a2:
+                st.markdown("<p class='metric-title'>ID Confidence</p>", unsafe_allow_html=True)
+                st.markdown(f"<p class='metric-value'>{r['score']}%</p>", unsafe_allow_html=True)
+            
+            st.markdown("#### Quantum Probability Matrix")
+            # Convert dict to dataframe for chart
+            pdf = pd.DataFrame(list(r['q']['prob'].items()), columns=['State', 'Probability'])
+            st.bar_chart(pdf.set_index('State'), color="#10b981")
+            st.caption(f"Backend Node: {r['q']['backend']}")
 
         with rtabs[2]:
-            if st.button("Build Detailed PDF"):
-                # Simplified PDF generator
+            if r['care']:
+                c = r['care']
+                m1, m2, m3 = st.columns(3)
+                m1.metric("Sunlight", c.get('sunlight', ['N/A'])[0])
+                m2.metric("Water", c.get('watering', 'N/A'))
+                m3.metric("Cycle", c.get('cycle', 'N/A'))
+                st.divider()
+                st.write("**Maintenance Memo:** Ensure specimen matches growth requirements for faster recovery.")
+            else:
+                st.warning("Insufficient bio-data in Perenual Care Matrix.")
+
+        with rtabs[3]:
+            if st.button("Generate Zenith Dossier"):
                 pdf = FPDF()
                 pdf.add_page()
-                pdf.set_font("helvetica", "B", 16)
-                pdf.cell(0, 10, f"PlantPulse Report: {r['plant']}", ln=True)
+                pdf.set_fill_color(3, 7, 10)
+                pdf.rect(0, 0, 210, 297, 'F')
+                pdf.set_text_color(16, 185, 129)
+                pdf.set_font("helvetica", "B", 24)
+                pdf.cell(0, 20, "PLANTPULSE ZENITH DOSSIER", ln=True, align='C')
                 pdf.set_font("helvetica", "", 12)
-                pdf.cell(0, 10, f"Condition: {r['disease']}", ln=True)
-                pdf.cell(0, 10, f"Severity: {r['q_sev']['label']}", ln=True)
-                pdf.ln(5)
-                pdf.multi_cell(0, 10, f"Description: {r['description']}")
-                report_bytes = pdf.output()
-                st.download_button("Download clinical_file.pdf", report_bytes, "PlantPulse_Report.pdf", "application/pdf")
+                pdf.set_text_color(200, 200, 200)
+                pdf.cell(0, 10, f"Timestamp: {datetime.datetime.now()}", ln=True, align='C')
+                pdf.ln(10)
+                pdf.set_font("helvetica", "B", 16)
+                pdf.cell(0, 10, f"Specimen: {r['plant']}", ln=True)
+                pdf.set_font("helvetica", "", 12)
+                pdf.multi_cell(0, 10, f"Diagnosis: {r['disease']}\nThreat Level: {r['q']['label']}\nPathology: {r['pathology']}")
+                st.download_button("Download Zenith_Dossier.pdf", pdf.output(), f"Pulse_{r['plant']}.pdf", "application/pdf")
     else:
-        st.info("Awaiting specimen in the diagnostic chamber...")
+        st.info("Scanner idle. Awaiting specimen input...")
 
-# --- Chatbot ---
+# --- Assistant ---
 st.divider()
-st.subheader("💬 PlantPulse Assistant")
-for m in st.session_state.chat_history:
-    st.chat_message(m["role"]).write(m["content"])
+st.subheader("💬 Zenith Smart Assistant")
+chat_box = st.container(height=350)
+with chat_box:
+    for m in st.session_state.chat_history:
+        st.chat_message(m["role"]).write(m["content"])
 
-if p := st.chat_input("Ask about symptoms or soil..."):
+if p := st.chat_input("Ask about pathogens, soil health, or remediation..."):
     st.session_state.chat_history.append({"role": "user", "content": p})
+    # Context injected response logic
+    ctxt = ""
+    if st.session_state.last_results:
+        res = st.session_state.last_results
+        ctxt = f"The scanned {res['plant']} has {res['disease']}. "
+    
+    resp = f"Analysis of '{p}': {ctxt}I recommend immediate isolation of the specimen to prevent cross-pathogen contamination."
+    st.session_state.chat_history.append({"role": "assistant", "content": resp})
     st.rerun()
 
-st.caption("PlantPulse v4.0 | Pure Cloud Intelligence | © 2026")
+st.caption("PlantPulse Zenith v5.0 | Enterprise Agritech Strategy | © 2026")
