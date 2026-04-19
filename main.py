@@ -125,6 +125,18 @@ st.markdown("""
         color: #10b981 !important; 
         box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
     }
+
+    /* Developer Cards */
+    .dev-card {
+        background: rgba(255, 255, 255, 0.03);
+        border-left: 3px solid #10b981;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 0 12px 12px 0;
+        font-size: 0.85rem;
+    }
+    .dev-name { font-weight: 700; color: #34d399; display: block; }
+    .dev-meta { font-size: 0.75rem; opacity: 0.6; display: block; }
 </style>
 
 <div class="blossom-leaf" style="left:5%; animation-delay: 0s;">🌿</div>
@@ -224,6 +236,26 @@ with st.sidebar:
         st.session_state.clear()
         st.rerun()
 
+    st.divider()
+    st.markdown("### 🛠 Development Core")
+    
+    st.markdown("""
+    <div class="dev-card">
+        <span class="dev-name">Sindhuja R</span>
+        <span class="dev-meta">Reg: 226004099</span>
+        <span class="dev-meta">sindhujarajagopalan99@gmail.com</span>
+    </div>
+    <div class="dev-card">
+        <span class="dev-name">Saraswathy</span>
+        <span class="dev-meta">Reg: 226004092</span>
+        <span class="dev-meta">saraswathyr1203@gmail.com</span>
+    </div>
+    <div class="dev-card">
+        <span class="dev-name">U. Kiruthika</span>
+        <span class="dev-meta">udhayasuriyankiruthika@gmail.com</span>
+    </div>
+    """, unsafe_allow_html=True)
+
 # ===============================
 # MAIN UI
 # ===============================
@@ -287,7 +319,12 @@ with col_in:
 
                     # 6. Micro-Analysis (Crop high-variance area)
                     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    laplacian = cv2.Laplacian(gray, cv2.CV_64F).var()
+                    
+                    # 7. Spectral Heatmap (Simulated)
+                    spectral = cv2.applyColorMap(gray, cv2.COLORMAP_JET)
+                    spectral = cv2.addWeighted(frame, 0.6, spectral, 0.4, 0)
+                    res["spectral_img"] = spectral
+
                     # Just take the center 256x256 for "micro" view
                     h, w = frame.shape[:2]
                     ch, cw = h//2, w//2
@@ -335,10 +372,16 @@ with col_out:
                     for k, v in r.get('rx', {}).items():
                         if v: st.success(f"**{k.replace('_',' ').title()}:** {v}")
             with col_p2:
+                st.markdown("<p class='metric-title'>Pathogen Spectral Depth</p>", unsafe_allow_html=True)
+                if "spectral_img" in r:
+                    st.image(cv2.cvtColor(r["spectral_img"], cv2.COLOR_BGR2RGB), use_container_width=True)
+                st.caption("Simulated pathogen density mapping.")
+                
+                st.divider()
                 st.markdown("<p class='metric-title'>Micro-Analysis (256px)</p>", unsafe_allow_html=True)
                 if "micro_img" in r:
                     st.image(cv2.cvtColor(r["micro_img"], cv2.COLOR_BGR2RGB), use_container_width=True)
-                st.caption("Auto-localized pathogen focus area.")
+                st.caption("Auto-localized focus area.")
             
         with rtabs[1]:
             st.markdown("<h4 style='color:#6ee7b7;'>Quantum Severity Breakdown</h4>", unsafe_allow_html=True)
