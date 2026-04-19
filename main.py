@@ -137,6 +137,18 @@ st.markdown("""
     }
     .dev-name { font-weight: 700; color: #34d399; display: block; }
     .dev-meta { font-size: 0.75rem; opacity: 0.6; display: block; }
+
+    /* Scan Line Animation */
+    .scan-line {
+        position: absolute; width: 100%; height: 2px;
+        background: #10b981; box-shadow: 0 0 15px #10b981;
+        top: 0; left: 0; z-index: 5;
+        animation: scan 3s linear infinite;
+    }
+    @keyframes scan {
+        0% { top: 0; }
+        100% { top: 100%; }
+    }
 </style>
 
 <div class="blossom-leaf" style="left:5%; animation-delay: 0s;">🌿</div>
@@ -304,6 +316,13 @@ with col_in:
                     care = get_perenual_care_info(pn.get('common_names', [plant_key])[0])
 
                     # 5. Build Result Prototype
+                    raw_rx = kw.get('treatment', {})
+                    if not raw_rx:
+                        raw_rx = {
+                            "remedy": "Isolate the specimen immediately. Sterilize all tools. Improve lighting to stabilize photosynthesis.",
+                            "prevention": "Ensure balanced irrigation and avoid nighttime foliar wetting."
+                        }
+
                     res = {
                         "plant": plant_key,
                         "common_name": pn.get('common_names', ['Generic Specimen'])[0],
@@ -312,7 +331,7 @@ with col_in:
                         "q": q,
                         "care": care,
                         "pathology": kw.get('description', 'No descriptive pathology data.'),
-                        "rx": kw.get('treatment', {}),
+                        "rx": raw_rx,
                         "timestamp": datetime.datetime.now().strftime("%H:%M:%S")
                     }
 
@@ -326,9 +345,9 @@ with col_in:
                             "Nutrient": random.randint(20, 80)
                         },
                         "timeline": {
-                            "Day 1": "Immediate isolation and application of organic fungicides.",
-                            "Day 7": "Re-evaluation of moisture levels and foliar status.",
-                            "Day 14": "Secondary treatment and microbiome stabilization."
+                            "Immediate": list(raw_rx.values())[0] if raw_rx else "Quarantine.",
+                            "Day 7": "Re-evaluation of viral/fungal load and nutrient baseline.",
+                            "Day 14": "Microbiome stabilization and hardware-assisted monitoring."
                         }
                     })
 
@@ -357,13 +376,17 @@ with col_out:
         r = st.session_state.last_results
         
         st.markdown(f"""
-        <div class="zenith-card">
-            <p class="metric-title">Detected Specimen</p>
+        <div class="zenith-card" style="filter: contrast(1.2) brightness(1.1);">
+            <p class="metric-title">Critical Specimen</p>
             <h2 class="glow-text" style="margin-bottom:0;">{r.get('plant', 'Unknown').upper()}</h2>
-            <p style="opacity:0.6; font-size:0.9rem;">{r.get('common_name', 'Generic Specimen')} | ID: {r.get('timestamp', 'NEW_SCAN')}</p>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
+            <p style="opacity:0.6; font-size:0.9rem;">{r.get('common_name', 'Generic Specimen')} | Scanned: {r.get('timestamp', 'NEW')}</p>
+            <div style="margin: 1rem 0; padding: 15px; background: rgba(16,185,129,0.1); border-radius: 12px; border: 1px solid rgba(16,185,129,0.3);">
+                <p style="color: #34d399; font-weight: 700; margin-bottom: 5px;">CORE REMEDY:</p>
+                <p style="font-size: 0.9rem; margin:0;">{list(r.get('rx', {}).values())[0] if r.get('rx') else 'Isolate specimen and monitor soil pH levels.'}</p>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div>
-                   <p class="metric-title">Pathogen</p>
+                   <p class="metric-title">Condition</p>
                    <p style="font-size:1.4rem; font-weight:700;">{r.get('disease', 'Healthy').title()}</p>
                 </div>
                 <span class="badge badge-{'critical' if r.get('q', {}).get('score', 3) > 3 else 'warning' if r.get('q', {}).get('score', 3) > 2 else 'optimal'}">
