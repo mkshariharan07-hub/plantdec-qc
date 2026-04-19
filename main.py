@@ -17,6 +17,8 @@ import traceback
 import pandas as pd
 from fpdf import FPDF
 from dotenv import load_dotenv
+import random
+import math
 
 # Optional Quantum Imports
 try:
@@ -370,7 +372,6 @@ with col_in:
                     })
 
                     # 6. Biological Projections
-                    import random
                     res.update({
                         "risk_matrix": {
                             "Fungal": random.randint(10, 90),
