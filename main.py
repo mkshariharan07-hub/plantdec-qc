@@ -189,8 +189,8 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str):
         qr = QuantumRegister(4, 'q')
         cr = ClassicalRegister(4, 'c')
         qc = QuantumCircuit(qr, cr)
-        from math import pi
-        qc.ry(entropy * pi, qr[0])
+        
+        qc.ry(entropy * math.pi, qr[0])
         qc.h(qr[1])
         qc.cx(qr[0], qr[2])
         qc.cx(qr[1], qr[3])
@@ -262,6 +262,13 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
+    st.markdown("### 🔍 System Diagnostics")
+    c1 = st.checkbox("PlantNet Key", value=bool(os.getenv("PLANTNET_API_KEY")))
+    c2 = st.checkbox("Kindwise Key", value=bool(os.getenv("CROP_HEALTH_API_KEY")))
+    c3 = st.checkbox("Quantum Key", value=bool(os.getenv("IBM_QUANTUM_TOKEN")))
+    if not (c1 and c2): st.warning("Diagnostics compromised: Keys missing.")
+    
+    st.divider()
     st.markdown("### 🧬 Assistant Core")
     st.session_state.assistant_mode = st.selectbox("Personality Matrix", ["Quantum Oracle", "Bio-Scientist", "Farm Guardian"])
     
@@ -312,99 +319,94 @@ with col_in:
             st.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), width="stretch")
             if st.button("🚀 INITIATE ZENITH SCAN", width="stretch", type="primary"):
                 with st.status("Harmonizing neural and quantum vectors...", expanded=True) as status:
-                    status.write("Species ID phase initiated...")
-                    pn = identify_plant_with_plantnet(frame)
-                    
-                    status.write("Pathogen matrix synchronization...")
-                    kw = identify_disease_with_kindwise(frame)
-                    
-                    status.write("Quantum state entanglement check...")
-                    q = analyze_severity_quantum(frame, "Simulator Only" if q_eng == "Simulator Optimized" else "Dynamic")
-                    
-                    plant_key = pn.get('scientific_name', 'Unknown')
-                    status.write(f"Retrieving care protocols for {plant_key}...")
-                    care = get_perenual_care_info(pn.get('common_names', [plant_key])[0])
+                    try:
+                        status.write("Species ID phase initiated...")
+                        pn = identify_plant_with_plantnet(frame)
+                        
+                        status.write("Pathogen matrix synchronization...")
+                        kw = identify_disease_with_kindwise(frame)
+                        
+                        status.write("Quantum state entanglement check...")
+                        q = analyze_severity_quantum(frame, "Simulator Only" if q_eng == "Simulator Optimized" else "Dynamic")
+                        
+                        plant_key = pn.get('scientific_name', 'Unknown')
+                        status.write(f"Retrieving care protocols for {plant_key}...")
+                        
+                        # Fix potential IndexError
+                        c_names = pn.get('common_names', [])
+                        c_name = c_names[0] if c_names else plant_key
+                        care = get_perenual_care_info(c_name)
 
-                    # 5. Build Result Prototype
-                    raw_rx = kw.get('treatment', {})
-                    if not raw_rx:
-                        raw_rx = {
-                            "remedy": "Isolate the specimen immediately. Sterilize all tools. Improve lighting to stabilize photosynthesis.",
-                            "prevention": "Ensure balanced irrigation and avoid nighttime foliar wetting."
-                        }
-                    
-                    # 5.1 Pesticide/Treatment Categorization
-                    d_lower = kw.get('disease', '').lower()
-                    if any(x in d_lower for x in ['fungal', 'fungus', 'mildew', 'rust', 'rot', 'spot']):
-                        p_cat = "Fungicide"
-                        p_search = "organic+fungicide+for+plants"
-                    elif any(x in d_lower for x in ['bacteria', 'wilt', 'blight']):
-                        p_cat = "Antibactericide"
-                        p_search = "plant+bacterial+treatment"
-                    elif any(x in d_lower for x in ['pest', 'insect', 'aphid', 'mite', 'worm']):
-                        p_cat = "Pesticide"
-                        p_search = "neem+oil+organic+pesticide"
-                    else:
+                        # 5. Build Result Prototype (Safe extraction)
+                        raw_rx = kw.get('treatment', {})
+                        if not raw_rx:
+                            raw_rx = {"remedy": "Isolate specimen and monitor microbial balance."}
+                        
+                        d_lower = str(kw.get('disease', '')).lower()
                         p_cat = "Organic Bio-Stimulant"
-                        p_search = "liquid+seaweed+fertilizer+for+plants"
+                        p_search = "liquid+seaweed+fertilizer"
+                        if "fungal" in d_lower: p_cat, p_search = "Fungicide", "organic+fungicide"
+                        elif "bacteria" in d_lower: p_cat, p_search = "Antibactericide", "plant+antibacterial"
+                        elif "pest" in d_lower or "insect" in d_lower: p_cat, p_search = "Pesticide", "neem+oil+pesticide"
 
-                    res = {
-                        "plant": plant_key,
-                        "common_name": pn.get('common_names', ['Generic Specimen'])[0],
-                        "disease": kw.get('disease', 'Healthy/Indeterminate') if "error" not in kw else "Pathogen Restricted",
-                        "score": pn.get('score', 0),
-                        "q": q,
-                        "care": care,
-                        "pathology": kw.get('description', 'No descriptive pathology data.'),
-                        "rx": raw_rx,
-                        "p_cat": p_cat,
-                        "p_link": f"https://www.amazon.com/s?k={p_search}",
-                        "timestamp": datetime.datetime.now().strftime("%H:%M:%S"),
-                        "ttf": random.randint(3, 14) if q['score'] > 2 else "Optimal",
-                        "carbon": round(random.uniform(0.5, 2.5), 2),
-                        "dna": "".join(random.choice("ATCG") for _ in range(32)),
-                        "roi": random.randint(150, 1200) # Currency unit
-                    }
-
-                    # Waypoints for drone
-                    res["waypoints"] = [
-                        {"lat": 20.59 + random.uniform(-0.001, 0.001), "lon": 78.96 + random.uniform(-0.001, 0.001), "alt": 10}
-                        for _ in range(5)
-                    ]
-
-                    # 6. Biological Projections
-                    res.update({
-                        "risk_matrix": {
-                            "Fungal": random.randint(10, 90),
-                            "Viral": random.randint(5, 40),
-                            "Bacterial": random.randint(10, 60),
-                            "Nutrient": random.randint(20, 80)
-                        },
-                        "timeline": {
-                            "Immediate": list(raw_rx.values())[0] if raw_rx else "Quarantine.",
-                            "Day 7": "Re-evaluation of viral/fungal load and nutrient baseline.",
-                            "Day 14": "Microbiome stabilization and hardware-assisted monitoring."
+                        res = {
+                            "plant": plant_key,
+                            "common_name": c_name,
+                            "disease": kw.get('disease', 'Healthy/Indeterminate'),
+                            "score": pn.get('score', 0),
+                            "q": q,
+                            "care": care,
+                            "pathology": kw.get('description', 'Pathology data offline.'),
+                            "rx": raw_rx,
+                            "p_cat": p_cat,
+                            "p_link": f"https://www.amazon.com/s?k={p_search}",
+                            "timestamp": datetime.datetime.now().strftime("%H:%M:%S"),
+                            "ttf": random.randint(3, 14) if q.get('score', 3) > 2 else "Optimal",
+                            "carbon": round(random.uniform(0.5, 2.5), 2),
+                            "dna": "".join(random.choice("ATCG") for _ in range(32)),
+                            "roi": random.randint(150, 1200)
                         }
-                    })
 
-                    # 7. Visual Overlays
-                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    spectral = cv2.applyColorMap(gray, cv2.COLORMAP_JET)
-                    spectral = cv2.addWeighted(frame, 0.6, spectral, 0.4, 0)
-                    res["spectral_img"] = spectral
+                        res["waypoints"] = [
+                            {"lat": 20.59 + random.uniform(-0.001, 0.001), "lon": 78.96 + random.uniform(-0.001, 0.001), "alt": 10}
+                            for _ in range(5)
+                        ]
 
-                    h, w = frame.shape[:2]
-                    ch, cw = h//2, w//2
-                    micro = frame[max(0, ch-128):min(h, ch+128), max(0, cw-128):min(w, cw+128)]
-                    res["micro_img"] = micro
+                        # 6. Biological Projections
+                        res.update({
+                            "risk_matrix": {
+                                "Fungal": random.randint(10, 90),
+                                "Viral": random.randint(5, 40),
+                                "Bacterial": random.randint(10, 60),
+                                "Nutrient": random.randint(20, 80)
+                            },
+                            "timeline": {
+                                "Immediate": list(raw_rx.values())[0],
+                                "Day 7": "Re-evaluation of spectral load.",
+                                "Day 14": "Microbiome stabilization."
+                            }
+                        })
 
-                    st.session_state.last_results = res
-                    status.update(label="Zenith Diagnosis Fulllocked.", state="complete")
-                    
-                    st.session_state.chat_history.append({
-                        "role": "assistant",
-                        "content": f"Scan for **{plant_key}** locked. Pathology indicates **{res['disease']}**. I've established a {q['label']} threat level. Commencing remediation planning."
-                    })
+                        # 7. Visual Overlays
+                        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                        spectral = cv2.applyColorMap(gray, cv2.COLORMAP_JET)
+                        res["spectral_img"] = cv2.addWeighted(frame, 0.6, spectral, 0.4, 0)
+
+                        h, w = frame.shape[:2]
+                        ch, cw = h//2, w//2
+                        res["micro_img"] = frame[max(0, ch-128):min(h, ch+128), max(0, cw-128):min(w, cw+128)]
+
+                        st.session_state.last_results = res
+                        st.session_state.specimen_history.append({"name": plant_key, "status": res['disease'], "time": res['timestamp']})
+                        status.update(label="Zenith Diagnosis Fulllocked.", state="complete")
+                        
+                        st.session_state.chat_history.append({
+                            "role": "assistant",
+                            "content": f"Scan for **{plant_key}** locked. Pathology indicates **{res['disease']}**. I've established a {q.get('label', 'Baseline')} threat level."
+                        })
+                    except Exception as e:
+                        st.error(f"Groot-Shield activated. Scan Interrupted: {e}")
+                        status.update(label="Hardware/API Desync Detected.", state="error")
     st.markdown("</div>", unsafe_allow_html=True)
 
 with col_out:
