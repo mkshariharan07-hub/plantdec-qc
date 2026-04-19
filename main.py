@@ -309,22 +309,19 @@ with col_in:
                         "timestamp": datetime.datetime.now().strftime("%H:%M:%S")
                     }
 
-                    # 6. Simulated Sensor Telemetry
+                    # 6. Biological Projections
                     import random
-                    sens = {
-                        "nitrogen": random.randint(30, 80),
-                        "phosphorus": random.randint(20, 60),
-                        "potassium": random.randint(30, 90),
-                        "ph": round(random.uniform(5.5, 7.5), 1),
-                        "moisture": random.randint(10, 90)
-                    }
-                    
                     res.update({
-                        "sensors": sens,
-                        "severity_breakdown": {
-                            "yield_impact": min(100, q['score'] * 20 + random.randint(0, 10)),
-                            "contagion_risk": min(100, q['score'] * 15 + random.randint(5, 15)),
-                            "aes_decay": min(100, q['score'] * 25)
+                        "risk_matrix": {
+                            "Fungal": random.randint(10, 90),
+                            "Viral": random.randint(5, 40),
+                            "Bacterial": random.randint(10, 60),
+                            "Nutrient": random.randint(20, 80)
+                        },
+                        "timeline": {
+                            "Day 1": "Immediate isolation and application of organic fungicides.",
+                            "Day 7": "Re-evaluation of moisture levels and foliar status.",
+                            "Day 14": "Secondary treatment and microbiome stabilization."
                         }
                     })
 
@@ -408,9 +405,15 @@ with col_out:
                 st.markdown("<p class='metric-title'>Identification Confidence</p>", unsafe_allow_html=True)
                 st.markdown(f"<p class='metric-value'>{r.get('score', 0)}%</p>", unsafe_allow_html=True)
             
-            st.markdown("<h4 style='color:#6ee7b7;'>Quantum Circuit Ledger</h4>", unsafe_allow_html=True)
-            st.code(r.get('q', {}).get('circuit_str', 'Circuit data missing'), language="text")
-            
+            st.markdown("<h4 style='color:#6ee7b7;'>Pathogen Risk Matrix</h4>", unsafe_allow_html=True)
+            import plotly.express as px
+            rm = r.get('risk_matrix', {})
+            risk_df = pd.DataFrame(list(rm.items()), columns=['Category', 'Index'])
+            fig = px.line_polar(risk_df, r='Index', theta='Category', line_close=True, range_r=[0,100])
+            fig.update_polars(bgcolor="rgba(0,0,0,0)", radialaxis_gridcolor="rgba(16,185,129,0.2)", angularaxis_gridcolor="rgba(16,185,129,0.2)")
+            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#d1fae5", margin=dict(l=20, r=20, t=20, b=20), height=300)
+            st.plotly_chart(fig, use_container_width=True)
+
             st.markdown("<h4 style='color:#6ee7b7;'>Probabilistic State Vectors</h4>", unsafe_allow_html=True)
             q_data = r.get('q', {})
             pdf_data = pd.DataFrame(list(q_data.get('prob', {'0000': 1.0}).items()), columns=['State', 'Probability'])
@@ -428,23 +431,23 @@ with col_out:
             st.caption("Active outbreaks detected in your regional geocode.")
 
         with rtabs[3]:
-            st.markdown("<h4 style='color:#6ee7b7;'>Simulated IoT Sensor Array</h4>", unsafe_allow_html=True)
-            s = r.get('sensors', {})
-            met1, met2, met3, met4, met5 = st.columns(5)
-            met1.metric("Nitrogen", f"{s.get('nitrogen')} mg/kg", delta="-5%" if r.get('q',{}).get('score',3)>3 else "Stable")
-            met2.metric("Phosphorus", f"{s.get('phosphorus')} mg/kg")
-            met3.metric("Potassium", f"{s.get('potassium')} mg/kg")
-            met4.metric("Soil pH", f"{s.get('ph')}")
-            met5.metric("Moisture", f"{s.get('moisture')}%")
+            st.markdown("<h4 style='color:#6ee7b7;'>14-Day Remediation Timeline</h4>", unsafe_allow_html=True)
+            tl = r.get('timeline', {})
+            for day, action in tl.items():
+                st.markdown(f"""
+                <div style='background:rgba(16,185,129,0.05); padding:15px; border-radius:12px; margin-bottom:8px; border-left:4px solid #10b981;'>
+                    <b style='color:#34d399;'>{day}</b>: {action}
+                </div>
+                """, unsafe_allow_html=True)
             
             st.divider()
             if r.get('care'):
                 c = r.get('care', {})
+                st.markdown("<p class='metric-title'>Standard Care Protocol</p>", unsafe_allow_html=True)
                 m1, m2, m3 = st.columns(3)
                 m1.metric("Sunlight Req.", c.get('sunlight', ['N/A'])[0])
                 m2.metric("Hydration Level", c.get('watering', 'N/A'))
                 m3.metric("Growth Cycle", c.get('cycle', 'N/A'))
-                st.write("**Environmental Optimization Directive:** Increase ventilation and monitor soil pH to stabilize the microbiome.")
             else:
                 st.warning("Botanical Care Matrix: Data Deficit.")
 
