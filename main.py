@@ -232,7 +232,7 @@ with st.sidebar:
     st.info("🧬 Pathogen Matrix: SYNCED")
     st.warning("🍂 Bio-Telemetry: HIGH LOAD")
     
-    if st.button("Reset Session Matrix", use_container_width=True):
+    if st.button("Reset Session Matrix", width="stretch"):
         st.session_state.clear()
         st.rerun()
 
@@ -280,8 +280,8 @@ with col_in:
     if img_bytes:
         frame = decode_bytes_to_bgr(img_bytes)
         if frame is not None:
-            st.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), use_container_width=True)
-            if st.button("🚀 INITIATE ZENITH SCAN", use_container_width=True, type="primary"):
+            st.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), width="stretch")
+            if st.button("🚀 INITIATE ZENITH SCAN", width="stretch", type="primary"):
                 with st.status("Harmonizing neural and quantum vectors...", expanded=True) as status:
                     status.write("Species ID phase initiated...")
                     pn = identify_plant_with_plantnet(frame)
@@ -296,10 +296,21 @@ with col_in:
                     status.write(f"Retrieving care protocols for {plant_key}...")
                     care = get_perenual_care_info(pn.get('common_names', [plant_key])[0])
 
-                    # 5. Simulated Sensor Telemetry
-                    # Generate values that would be typical for this species but slightly off if diseased
+                    # 5. Build Result Prototype
+                    res = {
+                        "plant": plant_key,
+                        "common_name": pn.get('common_names', ['Generic Specimen'])[0],
+                        "disease": kw.get('disease', 'Healthy/Indeterminate') if "error" not in kw else "Pathogen Restricted",
+                        "score": pn.get('score', 0),
+                        "q": q,
+                        "care": care,
+                        "pathology": kw.get('description', 'No descriptive pathology data.'),
+                        "rx": kw.get('treatment', {}),
+                        "timestamp": datetime.datetime.now().strftime("%H:%M:%S")
+                    }
+
+                    # 6. Simulated Sensor Telemetry
                     import random
-                    opt = res['care'] if res['care'] else {}
                     sens = {
                         "nitrogen": random.randint(30, 80),
                         "phosphorus": random.randint(20, 60),
@@ -317,15 +328,12 @@ with col_in:
                         }
                     })
 
-                    # 6. Micro-Analysis (Crop high-variance area)
+                    # 7. Visual Overlays
                     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    
-                    # 7. Spectral Heatmap (Simulated)
                     spectral = cv2.applyColorMap(gray, cv2.COLORMAP_JET)
                     spectral = cv2.addWeighted(frame, 0.6, spectral, 0.4, 0)
                     res["spectral_img"] = spectral
 
-                    # Just take the center 256x256 for "micro" view
                     h, w = frame.shape[:2]
                     ch, cw = h//2, w//2
                     micro = frame[max(0, ch-128):min(h, ch+128), max(0, cw-128):min(w, cw+128)]
@@ -374,13 +382,13 @@ with col_out:
             with col_p2:
                 st.markdown("<p class='metric-title'>Pathogen Spectral Depth</p>", unsafe_allow_html=True)
                 if "spectral_img" in r:
-                    st.image(cv2.cvtColor(r["spectral_img"], cv2.COLOR_BGR2RGB), use_container_width=True)
+                    st.image(cv2.cvtColor(r["spectral_img"], cv2.COLOR_BGR2RGB), width="stretch")
                 st.caption("Simulated pathogen density mapping.")
                 
                 st.divider()
                 st.markdown("<p class='metric-title'>Micro-Analysis (256px)</p>", unsafe_allow_html=True)
                 if "micro_img" in r:
-                    st.image(cv2.cvtColor(r["micro_img"], cv2.COLOR_BGR2RGB), use_container_width=True)
+                    st.image(cv2.cvtColor(r["micro_img"], cv2.COLOR_BGR2RGB), width="stretch")
                 st.caption("Auto-localized focus area.")
             
         with rtabs[1]:
