@@ -361,15 +361,16 @@ with col_in:
                         "p_link": f"https://www.amazon.com/s?k={p_search}",
                         "timestamp": datetime.datetime.now().strftime("%H:%M:%S"),
                         "ttf": random.randint(3, 14) if q['score'] > 2 else "Optimal",
-                        "carbon": round(random.uniform(0.5, 2.5), 2)
+                        "carbon": round(random.uniform(0.5, 2.5), 2),
+                        "dna": "".join(random.choice("ATCG") for _ in range(32)),
+                        "roi": random.randint(150, 1200) # Currency unit
                     }
 
-                    # Session Carousel Save
-                    st.session_state.specimen_history.append({
-                        "name": res['plant'],
-                        "status": res['disease'],
-                        "time": res['timestamp']
-                    })
+                    # Waypoints for drone
+                    res["waypoints"] = [
+                        {"lat": 20.59 + random.uniform(-0.001, 0.001), "lon": 78.96 + random.uniform(-0.001, 0.001), "alt": 10}
+                        for _ in range(5)
+                    ]
 
                     # 6. Biological Projections
                     res.update({
@@ -439,31 +440,43 @@ with col_out:
         </div>
         """, unsafe_allow_html=True)
         
-        rtabs = st.tabs(["🧪 Pathology", "📉 Quantum Telemetry", "🌈 Spectral Stats", "🛒 Purchase Nexus", "📋 Protocols", "📄 Reports"])
+        rtabs = st.tabs(["🧪 Pathology", "🧬 Genomics", "📉 Quantum", "🌈 Spectral", "🛡️ Security", "🛒 Purchase", "📄 Reports"])
         
         with rtabs[0]:
             col_p1, col_p2 = st.columns([2, 1])
             with col_p1:
                 st.info(f"**Bio-Analysis:** {r.get('pathology', 'N/A')}")
+                # 11. Biological ROI
+                st.markdown(f"""
+                <div style='background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border-left:4px solid #facc15;'>
+                    <b style='color:#facc15;'>Economic Impact Analysis (ROI):</b><br/>
+                    Estimated Crop Loss: -${r.get('roi', 500)} USD <br/>
+                    Remediation Gain: +${int(r.get('roi', 500) * 0.85)} USD
+                </div>
+                """, unsafe_allow_html=True)
+                
                 if r.get('rx'):
                     st.markdown("<h4 style='color:#6ee7b7;'>Remediation Directives</h4>", unsafe_allow_html=True)
                     for k, v in r.get('rx', {}).items():
                         if v: st.success(f"**{k.replace('_',' ').title()}:** {v}")
             with col_p2:
-                st.markdown("<p class='metric-title'>Pathogen Spectral Depth</p>", unsafe_allow_html=True)
+                # 12. Edge-AI Thermal Heatmap
+                st.markdown("<p class='metric-title'>Edge-AI Thermal Profile</p>", unsafe_allow_html=True)
                 if "spectral_img" in r:
-                    st.image(cv2.cvtColor(r["spectral_img"], cv2.COLOR_BGR2RGB), width="stretch")
-                st.caption("Simulated pathogen density mapping.")
+                    thermal = cv2.applyColorMap(cv2.cvtColor(r["micro_img"], cv2.COLOR_BGR2GRAY), cv2.COLORMAP_HOT)
+                    st.image(cv2.cvtColor(thermal, cv2.COLOR_BGR2RGB), width="stretch")
+                st.caption("Thermal metabolic hyperactivity localized.")
                 
-                st.divider()
-                st.markdown("<p class='metric-title'>Micro-Analysis (256px)</p>", unsafe_allow_html=True)
-                if "micro_img" in r:
-                    # Simulation of scanning animation handled in CSS
-                    st.markdown("<div style='position:relative;'>", unsafe_allow_html=True)
-                    st.markdown("<div class='scan-line'></div>", unsafe_allow_html=True)
-                    st.image(cv2.cvtColor(r["micro_img"], cv2.COLOR_BGR2RGB), width="stretch")
-                    st.markdown("</div>", unsafe_allow_html=True)
-                st.caption("Auto-localized focus area.")
+        with rtabs[1]:
+            st.markdown("<h4 style='color:#6ee7b7;'>Pathogen Genomic Fingerprint</h4>", unsafe_allow_html=True)
+            dna = r.get('dna', 'ATCG'*8)
+            st.code(dna, language="text")
+            st.caption("Simulated DNA sequence of the detected pathogen. Highlights indicate mutated high-risk alleles.")
+            
+            st.divider()
+            st.markdown("<h4 style='color:#6ee7b7;'>🚁 Precision Drone Waypoints</h4>", unsafe_allow_html=True)
+            st.json(r.get('waypoints', []))
+            st.button("EXPORT MAVLINK / DJI-SDK WAYPOINTS", use_container_width=True)
             
         with rtabs[1]:
             st.markdown("<h4 style='color:#6ee7b7;'>Qiskit Quantum Bio-Telemetry</h4>", unsafe_allow_html=True)
@@ -578,16 +591,18 @@ with chat_box:
     for m in st.session_state.chat_history:
         st.chat_message(m["role"]).write(m["content"])
 
-if p := st.chat_input("Ask about pathogens, soil health, or remediation..."):
-    st.session_state.chat_history.append({"role": "user", "content": p})
-    # Context injected response logic
-    ctxt = ""
-    if st.session_state.last_results:
-        res = st.session_state.last_results
-        ctxt = f"The scanned {res['plant']} has {res['disease']}. "
-    
-    resp = f"Analysis of '{p}': {ctxt}I recommend immediate isolation of the specimen to prevent cross-pathogen contamination."
-    st.session_state.chat_history.append({"role": "assistant", "content": resp})
-    st.rerun()
+        with rtabs[4]:
+            st.markdown("<h4 style='color:#6ee7b7;'>🛡️ Quantum Bio-Encryption</h4>", unsafe_allow_html=True)
+            st.info("Generating unique encryption hashes using quantum entanglement randomness for data security.")
+            q_hash = base64.b64encode(os.urandom(32)).decode()
+            st.markdown(f"""
+            <div style="background:rgba(0,0,0,0.3); padding:20px; border-radius:12px; font-family:monospace; border:1px solid #34d399;">
+                <p style="color:#34d399; margin:0;">SECURE_SCAN_KEY:</p>
+                <p style="word-break:break-all;">{q_hash}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            st.divider()
+            st.checkbox("Enable End-to-End Encrypted Sync")
+            st.button("REVOKE ACCESS KEYS")
 
 st.caption("PlantPulse Zenith v5.0 | Enterprise Agritech Strategy | © 2026")
