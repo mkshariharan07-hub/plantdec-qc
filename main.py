@@ -151,7 +151,7 @@ st.markdown("""
 # ===============================
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
-        {"role": "assistant", "content": "Groot online. I am at your service for clinical botanical analysis. Inhale the data... Exhale the cure."}
+        {"role": "assistant", "content": "I am Groot... The Quantum Oracle. The universe is entangled. your crops are qubits in a cosmic circuit. How shall we collapse the wave function of this pathogen today?"}
     ]
 if "last_results" not in st.session_state:
     st.session_state.last_results = None
@@ -204,16 +204,23 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str):
         if isinstance(dom_state, int): dom_state = format(dom_state, '04b')
         score = dom_state.count('1') + 1
         labels = ["Optimal", "Incipient", "Moderate", "Severe", "Critical"]
+        # Circuit Stats
+        gates = qc.count_ops()
+        depth = qc.depth()
+        
         return {
             "score": score, 
             "label": labels[min(score-1, 4)], 
             "prob": probs, 
             "backend": backend_name, 
             "entropy": entropy,
-            "circuit_str": str(qc.draw(output='text'))
+            "circuit_str": str(qc.draw(output='text')),
+            "gates": dict(gates),
+            "depth": depth,
+            "entanglement": dom_state.count('1') / 4.0
         }
     except Exception as e:
-        return {"score": 3, "label": "Analysis Uncertain", "prob": {"Error": 1.0}, "backend": "error", "circuit_str": "Circuit Generation Failure"}
+        return {"score": 3, "label": "Analysis Uncertain", "prob": {"0000": 1.0}, "backend": "error", "circuit_str": "Circuit Generation Failure", "gates": {}, "depth": 0, "entanglement": 0}
 
 # ===============================
 # SIDEBAR
@@ -389,33 +396,44 @@ with col_out:
                 st.caption("Auto-localized focus area.")
             
         with rtabs[1]:
-            st.markdown("<h4 style='color:#6ee7b7;'>Quantum Severity Breakdown</h4>", unsafe_allow_html=True)
-            sb = r.get('severity_breakdown', {})
-            c1, c2, c3 = st.columns(3)
-            c1.progress(sb.get('yield_impact', 0)/100, text=f"Yield Impact: {sb.get('yield_impact', 0)}%")
-            c2.progress(sb.get('contagion_risk', 0)/100, text=f"Contagion Risk: {sb.get('contagion_risk', 0)}%")
-            c3.progress(sb.get('aes_decay', 0)/100, text=f"Visual Decay: {sb.get('aes_decay', 0)}%")
-            
-            st.divider()
-            col_a1, col_a2 = st.columns(2)
-            with col_a1:
-                st.markdown("<p class='metric-title'>Quantum Entropy</p>", unsafe_allow_html=True)
-                st.markdown(f"<p class='metric-value'>{r.get('q', {}).get('entropy', 0.5):.4f}</p>", unsafe_allow_html=True)
-            with col_a2:
-                st.markdown("<p class='metric-title'>Identification Confidence</p>", unsafe_allow_html=True)
-                st.markdown(f"<p class='metric-value'>{r.get('score', 0)}%</p>", unsafe_allow_html=True)
-            
-            st.markdown("<h4 style='color:#6ee7b7;'>Pathogen Risk Matrix</h4>", unsafe_allow_html=True)
-            import plotly.express as px
-            rm = r.get('risk_matrix', {})
-            risk_df = pd.DataFrame(list(rm.items()), columns=['Category', 'Index'])
-            fig = px.line_polar(risk_df, r='Index', theta='Category', line_close=True, range_r=[0,100])
-            fig.update_polars(bgcolor="rgba(0,0,0,0)", radialaxis_gridcolor="rgba(16,185,129,0.2)", angularaxis_gridcolor="rgba(16,185,129,0.2)")
-            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#d1fae5", margin=dict(l=20, r=20, t=20, b=20), height=300)
-            st.plotly_chart(fig, use_container_width=True)
-
-            st.markdown("<h4 style='color:#6ee7b7;'>Probabilistic State Vectors</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='color:#6ee7b7;'>Qiskit Quantum Bio-Telemetry</h4>", unsafe_allow_html=True)
             q_data = r.get('q', {})
+            
+            # --- Quantum Metrics Row ---
+            mcol1, mcol2, mcol3 = st.columns(3)
+            mcol1.metric("Gate Depth", q_data.get('depth', 0))
+            mcol2.metric("Biological Qubits", "4 (Entangled)")
+            mcol3.metric("Entanglement Index", f"{int(q_data.get('entanglement', 0)*100)}%")
+            
+            # --- Bloch Sphere Mockup ---
+            st.markdown("<p class='metric-title'>Biological Bloch Sphere (Simulated)</p>", unsafe_allow_html=True)
+            import plotly.graph_objects as go
+            import math
+            import numpy as np
+            
+            # Simulated vector based on entropy
+            ent = q_data.get('entropy', 0.5)
+            theta = ent * math.pi
+            phi = (q_data.get('score', 3) / 5.0) * 2 * math.pi
+            vx = math.sin(theta) * math.cos(phi)
+            vy = math.sin(theta) * math.sin(phi)
+            vz = math.cos(theta)
+            
+            fig_bloch = go.Figure(data=[
+                go.Scatter3d(x=[0, vx], y=[0, vy], z=[0, vz], mode='lines+markers', line=dict(color='#10b981', width=8), marker=dict(size=4)),
+                go.Mesh3d(x=[math.cos(i)*math.sin(j) for i in np.linspace(0,2*math.pi,20) for j in np.linspace(0,math.pi,20)],
+                          y=[math.sin(i)*math.sin(j) for i in np.linspace(0,2*math.pi,20) for j in np.linspace(0,math.pi,20)],
+                          z=[math.cos(j) for i in np.linspace(0,2*math.pi,20) for j in np.linspace(0,math.pi,20)],
+                          opacity=0.03, color='#34d399')
+            ])
+            fig_bloch.update_layout(scene=dict(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False), paper_bgcolor="rgba(0,0,0,0)", height=350, margin=dict(l=0,r=0,t=0,b=0))
+            st.plotly_chart(fig_bloch, use_container_width=True)
+
+            # --- Circuit & Probability ---
+            st.markdown("<h4 style='color:#6ee7b7;'>Quantum Circuit Ledger</h4>", unsafe_allow_html=True)
+            st.code(q_data.get('circuit_str', 'Circuit data missing'), language="text")
+            
+            st.markdown("<h4 style='color:#6ee7b7;'>Probabilistic State Vectors</h4>", unsafe_allow_html=True)
             pdf_data = pd.DataFrame(list(q_data.get('prob', {'0000': 1.0}).items()), columns=['State', 'Probability'])
             st.bar_chart(pdf_data.set_index('State'), color="#10b981")
             st.caption(f"Execution Node: {q_data.get('backend', 'N/A')}")
