@@ -476,7 +476,9 @@ with col_out:
             st.divider()
             st.markdown("<h4 style='color:#6ee7b7;'>🚁 Precision Drone Waypoints</h4>", unsafe_allow_html=True)
             st.json(r.get('waypoints', []))
-            st.butto        with rtabs[2]:
+            st.button("EXPORT MAVLINK / DJI-SDK WAYPOINTS", use_container_width=True)
+            
+        with rtabs[2]:
             st.markdown("<h4 style='color:#6ee7b7;'>Qiskit Quantum Bio-Telemetry</h4>", unsafe_allow_html=True)
             q_data = r.get('q', {})
             mcol1, mcol2, mcol3 = st.columns(3)
