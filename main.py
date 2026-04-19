@@ -560,8 +560,7 @@ with col_out:
                 pdf.cell(0, 20, "PLANTPULSE EMERALD DOSSIER", ln=True, align='C')
                 pdf.set_font("helvetica", "", 12)
                 pdf.multi_cell(0, 10, f"Target: {r.get('plant')}\nCondition: {r.get('disease')}\nPathology: {r.get('pathology')}")
-                st.download_button("Download Bio_Report.pdf", pdf.output(), f"Emerald_{r.get('plant')}.pdf", "application/pdf")
-Bio_Report.pdf", pdf.output(), f"Emerald_{r.get('plant', 'scan')}.pdf", "application/pdf")
+                st.download_button("Download Bio_Report.pdf", pdf.output(), f"Emerald_{r.get('plant', 'scan')}.pdf", "application/pdf")
     else:
         st.info("Scanner idle. Awaiting specimen input...")
 
@@ -573,6 +572,6 @@ with chat_box:
     for m in st.session_state.chat_history:
         st.chat_message(m["role"]).write(m["content"])
 
-        st.chat_input("Processing biometric signal...", disabled=True)
+st.chat_input("Processing biometric signal...", disabled=True)
 
 st.caption("PlantPulse Zenith v5.0 | Enterprise Agritech Strategy | © 2026")
