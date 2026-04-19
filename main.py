@@ -59,65 +59,72 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
     
     .stApp { 
-        background-color: #03070a;
+        background-color: #01160d;
         background-image: 
-            radial-gradient(circle at 20% 30%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
-            radial-gradient(circle at 80% 70%, rgba(6, 182, 212, 0.05) 0%, transparent 40%);
-        color: #e2e8f0; 
+            radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.1) 0%, transparent 40%),
+            radial-gradient(circle at 90% 80%, rgba(5, 150, 105, 0.1) 0%, transparent 40%);
+        color: #ecfdf5; 
         font-family: 'Outfit', sans-serif;
     }
 
     /* Falling Leaf Animation */
     @keyframes blossom {
         0% { transform: translateY(-10vh) rotate(0deg) scale(0.5); opacity: 0; }
-        20% { opacity: 0.6; }
-        80% { opacity: 0.6; }
+        20% { opacity: 0.8; }
+        80% { opacity: 0.8; }
         100% { transform: translateY(110vh) rotate(720deg) scale(1); opacity: 0; }
     }
     .blossom-leaf {
         position: fixed; top: -5vh; z-index: 1000; pointer-events: none;
-        animation: blossom 12s linear infinite; font-size: 28px; filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.4));
+        animation: blossom 15s linear infinite; font-size: 28px; color: #10b981; filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.4));
     }
 
     /* Zenith Glassmorphism Cards */
     .zenith-card {
-        background: rgba(15, 23, 42, 0.6);
-        backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 24px;
-        padding: 1.5rem;
-        margin-bottom: 1.2rem;
-        transition: transform 0.3s ease, border-color 0.3s ease;
+        background: rgba(6, 78, 59, 0.25);
+        backdrop-filter: blur(24px);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        border-radius: 28px;
+        padding: 1.8rem;
+        margin-bottom: 1.5rem;
+        transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
     }
     .zenith-card:hover {
-        transform: translateY(-4px);
-        border-color: rgba(16, 185, 129, 0.3);
-        background: rgba(15, 23, 42, 0.8);
+        transform: translateY(-5px);
+        border-color: #10b981;
+        background: rgba(6, 78, 59, 0.35);
+        box-shadow: 0 15px 50px rgba(16, 185, 129, 0.1);
     }
 
     .glow-text {
-        color: #10b981;
-        text-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
-        font-weight: 700;
+        color: #34d399;
+        text-shadow: 0 0 25px rgba(16, 185, 129, 0.7);
+        font-weight: 800;
     }
 
-    .metric-title { font-size: 0.85rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 1.5px; }
-    .metric-value { font-size: 2.4rem; font-weight: 800; }
+    .metric-title { font-size: 0.85rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 2px; color: #6ee7b7; }
+    .metric-value { font-size: 2.6rem; font-weight: 800; color: #ffffff; }
 
     /* Custom Status Badges */
     .badge {
-        padding: 6px 16px; border-radius: 100px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;
+        padding: 8px 18px; border-radius: 100px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px;
     }
-    .badge-critical { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444; }
-    .badge-warning { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid #f59e0b; }
-    .badge-optimal { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981; }
+    .badge-critical { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #f87171; }
+    .badge-warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #fbbf24; }
+    .badge-optimal { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #34d399; }
 
     /* Better tabs */
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; background-color: transparent; }
+    .stTabs [data-baseweb="tab-list"] { gap: 12px; background-color: transparent; }
     .stTabs [data-baseweb="tab"] {
-        height: 45px; border-radius: 12px; background-color: rgba(255,255,255,0.03); color: white; border: 1px solid rgba(255,255,255,0.05); padding: 0 20px;
+        height: 50px; border-radius: 16px; background-color: rgba(6, 95, 70, 0.1); color: #d1fae5; border: 1px solid rgba(16, 185, 129, 0.1); padding: 0 24px;
     }
-    .stTabs [aria-selected="true"] { background-color: rgba(16, 185, 129, 0.1) !important; border-color: #10b981 !important; color: #10b981 !important; }
+    .stTabs [aria-selected="true"] { 
+        background-color: rgba(16, 185, 129, 0.2) !important; 
+        border-color: #10b981 !important; 
+        color: #10b981 !important; 
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+    }
 </style>
 
 <div class="blossom-leaf" style="left:5%; animation-delay: 0s;">🌿</div>
@@ -185,9 +192,16 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str):
         if isinstance(dom_state, int): dom_state = format(dom_state, '04b')
         score = dom_state.count('1') + 1
         labels = ["Optimal", "Incipient", "Moderate", "Severe", "Critical"]
-        return {"score": score, "label": labels[min(score-1, 4)], "prob": probs, "backend": backend_name, "entropy": entropy}
+        return {
+            "score": score, 
+            "label": labels[min(score-1, 4)], 
+            "prob": probs, 
+            "backend": backend_name, 
+            "entropy": entropy,
+            "circuit_str": str(qc.draw(output='text'))
+        }
     except Exception as e:
-        return {"score": 3, "label": "Analysis Uncertain", "prob": {"Error": 1.0}, "backend": "error"}
+        return {"score": 3, "label": "Analysis Uncertain", "prob": {"Error": 1.0}, "backend": "error", "circuit_str": "Circuit Generation Failure"}
 
 # ===============================
 # SIDEBAR
@@ -291,14 +305,14 @@ with col_out:
         </div>
         """, unsafe_allow_html=True)
         
-        rtabs = st.tabs(["🧪 Pathology", "📈 Analytics", "📋 Workflow", "📄 Reports"])
+        rtabs = st.tabs(["🧪 Pathology", "📉 Quantum Telemetry", "🌍 Threat Matrix", "📋 Protocols", "📄 Reports"])
         
         with rtabs[0]:
             st.info(f"**Bio-Analysis:** {r.get('pathology', 'N/A')}")
             if r.get('rx'):
-                st.markdown("#### Clinical Remediation")
+                st.markdown("<h4 style='color:#6ee7b7;'>Remediation Directives</h4>", unsafe_allow_html=True)
                 for k, v in r.get('rx', {}).items():
-                    if v: st.write(f"**{k.replace('_',' ').title()}:** {v}")
+                    if v: st.success(f"**{k.replace('_',' ').title()}:** {v}")
             
         with rtabs[1]:
             col_a1, col_a2 = st.columns(2)
@@ -306,46 +320,58 @@ with col_out:
                 st.markdown("<p class='metric-title'>Quantum Entropy</p>", unsafe_allow_html=True)
                 st.markdown(f"<p class='metric-value'>{r.get('q', {}).get('entropy', 0.5):.4f}</p>", unsafe_allow_html=True)
             with col_a2:
-                st.markdown("<p class='metric-title'>ID Confidence</p>", unsafe_allow_html=True)
+                st.markdown("<p class='metric-title'>Identification Confidence</p>", unsafe_allow_html=True)
                 st.markdown(f"<p class='metric-value'>{r.get('score', 0)}%</p>", unsafe_allow_html=True)
             
-            st.markdown("#### Quantum Probability Matrix")
-            # Convert dict to dataframe for chart
+            st.markdown("<h4 style='color:#6ee7b7;'>Quantum Circuit Ledger</h4>", unsafe_allow_html=True)
+            st.code(r.get('q', {}).get('circuit_str', 'Circuit data missing'), language="text")
+            
+            st.markdown("<h4 style='color:#6ee7b7;'>Probabilistic State Vectors</h4>", unsafe_allow_html=True)
             q_data = r.get('q', {})
             pdf_data = pd.DataFrame(list(q_data.get('prob', {'0000': 1.0}).items()), columns=['State', 'Probability'])
             st.bar_chart(pdf_data.set_index('State'), color="#10b981")
-            st.caption(f"Backend Node: {q_data.get('backend', 'N/A')}")
+            st.caption(f"Execution Node: {q_data.get('backend', 'N/A')}")
 
         with rtabs[2]:
-            if r['care']:
-                c = r['care']
-                m1, m2, m3 = st.columns(3)
-                m1.metric("Sunlight", c.get('sunlight', ['N/A'])[0])
-                m2.metric("Water", c.get('watering', 'N/A'))
-                m3.metric("Cycle", c.get('cycle', 'N/A'))
-                st.divider()
-                st.write("**Maintenance Memo:** Ensure specimen matches growth requirements for faster recovery.")
-            else:
-                st.warning("Insufficient bio-data in Perenual Care Matrix.")
+            st.markdown("<h4 style='color:#6ee7b7;'>Global Pathogen Heatmap</h4>", unsafe_allow_html=True)
+            # Create dynamic coordinates for a threat map
+            map_data = pd.DataFrame(
+                np.random.randn(20, 2) / [50, 50] + [20.59, 78.96], # Centered over India as a base
+                columns=['lat', 'lon']
+            )
+            st.map(map_data, color='#10b981')
+            st.caption("Active outbreaks detected in your regional geocode.")
 
         with rtabs[3]:
-            if st.button("Generate Zenith Dossier"):
+            if r.get('care'):
+                c = r.get('care', {})
+                m1, m2, m3 = st.columns(3)
+                m1.metric("Sunlight Req.", c.get('sunlight', ['N/A'])[0])
+                m2.metric("Hydration Level", c.get('watering', 'N/A'))
+                m3.metric("Growth Cycle", c.get('cycle', 'N/A'))
+                st.divider()
+                st.write("**Groot's Memo:** Optimize localized bio-conditions to neutralize pathogen escalation.")
+            else:
+                st.warning("Botanical Care Matrix: Data Deficit.")
+
+        with rtabs[4]:
+            if st.button("Download Clinical Dossier"):
                 pdf = FPDF()
                 pdf.add_page()
-                pdf.set_fill_color(3, 7, 10)
+                pdf.set_fill_color(1, 22, 13)
                 pdf.rect(0, 0, 210, 297, 'F')
                 pdf.set_text_color(16, 185, 129)
                 pdf.set_font("helvetica", "B", 24)
-                pdf.cell(0, 20, "PLANTPULSE ZENITH DOSSIER", ln=True, align='C')
+                pdf.cell(0, 20, "PLANTPULSE EMERALD DOSSIER", ln=True, align='C')
                 pdf.set_font("helvetica", "", 12)
-                pdf.set_text_color(200, 200, 200)
-                pdf.cell(0, 10, f"Timestamp: {datetime.datetime.now()}", ln=True, align='C')
+                pdf.set_text_color(167, 243, 208)
+                pdf.cell(0, 10, f"Generated: {datetime.datetime.now()}", ln=True, align='C')
                 pdf.ln(10)
                 pdf.set_font("helvetica", "B", 16)
-                pdf.cell(0, 10, f"Specimen: {r.get('plant', 'N/A')}", ln=True)
+                pdf.cell(0, 10, f"Target: {r.get('plant', 'N/A')}", ln=True)
                 pdf.set_font("helvetica", "", 12)
-                pdf.multi_cell(0, 10, f"Diagnosis: {r.get('disease', 'N/A')}\nThreat Level: {r.get('q', {}).get('label', 'N/A')}\nPathology: {r.get('pathology', 'N/A')}")
-                st.download_button("Download Zenith_Dossier.pdf", pdf.output(), f"Pulse_{r.get('plant', 'scan')}.pdf", "application/pdf")
+                pdf.multi_cell(0, 10, f"Condition: {r.get('disease', 'N/A')}\nQuantum Risk: {r.get('q', {}).get('label', 'N/A')}\n\nClinical Pathology: {r.get('pathology', 'N/A')}")
+                st.download_button("Download Bio_Report.pdf", pdf.output(), f"Emerald_{r.get('plant', 'scan')}.pdf", "application/pdf")
     else:
         st.info("Scanner idle. Awaiting specimen input...")
 
