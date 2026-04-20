@@ -369,24 +369,30 @@ with col_in:
                         status.write("Species ID phase initiated...")
                         pn = identify_plant_with_plantnet(frame)
                         
-                        # Fallback Logic: if PlantNet fails or has no matches, try local model
-                        if "error" in pn or not pn.get('scientific_name'):
-                            status.write("PlantNet inconclusive. Engaging heuristic local model...")
-                            try:
-                                model, scaler = load_model_and_scaler()
-                                pred = predict_image(frame, model, scaler)
-                                # Bridge local prediction to PN-like structure
-                                pn = {
-                                    "scientific_name": pred.get('plant', 'Unknown Specimen'),
-                                    "common_names": [pred.get('plant', 'Unknown Specimen')],
-                                    "score": pred.get('confidence', 0)
-                                }
-                            except Exception as e:
-                                status.write(f"Heuristic fallback failed: {e}")
+                        # 100% Cloud-Based Identification Pipeline
+                        if "error" in pn or not pn.get('scientific_name') or pn.get('scientific_name') == "Unknown Specimen":
+                            status.write("PlantNet inconclusive. Initializing cross-signature inference...")
+                            # 1. Attempt to infer plant from Kindwise (Crop.Health) disease results
+                            kw = identify_disease_with_kindwise(frame)
+                            disease_name = kw.get('disease', '').lower()
+                            inferred_plant = None
+                            
+                            # Dictionary of host indicators for better extraction
+                            hosts = ["apple", "corn", "maize", "potato", "tomato", "grape", "banana", "paddy", "rice", "wheat", "citrus"]
+                            for p in hosts:
+                                if p in disease_name:
+                                    inferred_plant = p.capitalize()
+                                    break
+                            
+                            if inferred_plant:
+                                status.write(f"Species identifying via Pathogen Signature: {inferred_plant}")
+                                pn = {"scientific_name": inferred_plant, "common_names": [inferred_plant], "score": 75.0}
+                            else:
+                                # Primary and secondary cloud efforts exhausted
                                 pn = {"scientific_name": "Unknown Specimen", "common_names": ["Unknown"], "score": 0}
-                        
-                        status.write("Pathogen matrix synchronization...")
-                        kw = identify_disease_with_kindwise(frame)
+                        else:
+                            # Standard Kindwise analysis if plant already identified by PlantNet
+                            kw = identify_disease_with_kindwise(frame)
                         
                         status.write("Quantum state entanglement check...")
                         q = analyze_severity_quantum(frame, "Simulator Only" if q_eng == "Simulator Optimized" else "Dynamic")
