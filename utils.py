@@ -327,7 +327,12 @@ def predict_image(img_bgr: np.ndarray, model, scaler=None) -> dict:
 
 def identify_plant_with_plantnet(img_bgr: np.ndarray) -> dict:
     """Identify plant using PlantNet API (Scientific & Common names)."""
-    if not PLANTNET_API_KEY:
+    # Dynamic read to capture .env updates instantly
+    from dotenv import load_dotenv
+    load_dotenv()
+    api_key = os.getenv("PLANTNET_API_KEY")
+    
+    if not api_key:
         return {"error": "PlantNet API Key missing in .env"}
     
     try:
@@ -336,7 +341,7 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray) -> dict:
         data = {'organs': ['auto']}
         
         # 'all' searches across all floras for maximum coverage
-        url = f"https://my-api.plantnet.org/v2/identify/all?api-key={PLANTNET_API_KEY}"
+        url = f"https://my-api.plantnet.org/v2/identify/all?api-key={api_key}"
         response = requests.post(url, files=files, data=data, timeout=15)
         response.raise_for_status()
         
@@ -359,7 +364,11 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray) -> dict:
 
 def identify_disease_with_kindwise(img_bgr: np.ndarray) -> dict:
     """Identify diseases/health using Kindwise Crop Health API."""
-    if not CROP_HEALTH_API_KEY:
+    from dotenv import load_dotenv
+    load_dotenv()
+    api_key = os.getenv("CROP_HEALTH_API_KEY")
+
+    if not api_key:
         return {"error": "Crop Health API Key missing in .env"}
 
     try:
@@ -368,7 +377,7 @@ def identify_disease_with_kindwise(img_bgr: np.ndarray) -> dict:
         
         url = "https://api.crop.health/v1/identification"
         headers = {
-            "Api-Key": CROP_HEALTH_API_KEY,
+            "Api-Key": api_key,
             "Content-Type": "application/json"
         }
         payload = {
@@ -405,10 +414,14 @@ def identify_disease_with_kindwise(img_bgr: np.ndarray) -> dict:
 
 def get_perenual_care_info(common_name: str) -> dict:
     """Fetch additional care info using Perenual API."""
-    if not PERENUAL_API_KEY:
+    from dotenv import load_dotenv
+    load_dotenv()
+    api_key = os.getenv("PERENUAL_API_KEY")
+    
+    if not api_key:
         return {}
     
-    url = f"https://perenual.com/api/species-list?key={PERENUAL_API_KEY}&q={common_name}"
+    url = f"https://perenual.com/api/species-list?key={api_key}&q={common_name}"
     try:
         response = requests.get(url, timeout=10)
         data = response.json()
