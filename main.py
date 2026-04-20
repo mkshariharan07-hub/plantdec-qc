@@ -289,13 +289,18 @@ with st.sidebar:
         st.session_state.clear()
         st.rerun()
 
+    with st.expander("🔑 Credential Overrides", expanded=False):
+        pn_k = st.text_input("PlantNet API Key", value=os.getenv("PLANTNET_API_KEY") or "", type="password")
+        kw_k = st.text_input("Kindwise API Key", value=os.getenv("CROP_HEALTH_API_KEY") or "", type="password")
+        keys = {"PLANTNET": pn_k, "KINDWISE": kw_k}
+
     st.divider()
     st.markdown("### 🔍 System Diagnostics")
     c_sid = st.session_state.get('last_scan_id', 'None')
     st.write(f"Current Matrix ID: `{c_sid[:8] if c_sid else 'None'}`")
     st.write(f"Neural Mesh: {'🟢 READY' if HAS_LOCAL_MODEL else '🔴 OFFLINE'}")
-    c1 = st.checkbox("PlantNet Key", value=bool(os.getenv("PLANTNET_API_KEY")))
-    c2 = st.checkbox("Kindwise Key", value=bool(os.getenv("CROP_HEALTH_API_KEY")))
+    c1 = st.checkbox("PlantNet Key", value=bool(pn_k))
+    c2 = st.checkbox("Kindwise Key", value=bool(kw_k))
     c3 = st.checkbox("Quantum Key", value=bool(os.getenv("IBM_QUANTUM_TOKEN")))
     if not (c1 and c2): st.warning("Diagnostics compromised: Keys missing.")
     
@@ -452,7 +457,7 @@ with col_in:
                     
                     try:
                         status.write("Species ID phase initiated...")
-                        pn = identify_plant_with_plantnet(frame)
+                        pn = identify_plant_with_plantnet(frame, api_key=keys["PLANTNET"])
                         
                         # LOG FOR DEEP-DEBUG
                         with open("api_log.txt", "a") as f:
@@ -466,7 +471,7 @@ with col_in:
                         if is_weak or unstable:
                             status.write("PlantNet inconclusive. Scaling to Pathogen Path-Mining...")
                             # 1. Higher-Depth Pathogen Identification
-                            kw = identify_disease_with_kindwise(frame)
+                            kw = identify_disease_with_kindwise(frame, api_key=keys["KINDWISE"])
                             disease_name = kw.get('disease', '').lower()
                             inferred_plant = None
                             
@@ -540,7 +545,7 @@ with col_in:
                         st.session_state.last_results['score'] = pn.get('score', 0)
                         
                         # 3. Pathogen Phase
-                        kw = identify_disease_with_kindwise(frame)
+                        kw = identify_disease_with_kindwise(frame, api_key=keys["KINDWISE"])
                         st.session_state.last_results['disease'] = kw.get('disease', 'Healthy/Indeterminate')
                         
                         status.write("Quantum state entanglement check...")

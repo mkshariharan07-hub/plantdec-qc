@@ -325,14 +325,15 @@ def predict_image(img_bgr: np.ndarray, model, scaler=None) -> dict:
 # EXTERNAL API CONNECTORS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def identify_plant_with_plantnet(img_bgr: np.ndarray) -> dict:
+def identify_plant_with_plantnet(img_bgr: np.ndarray, api_key: str = None) -> dict:
     """Identify plant using PlantNet API with adaptive flora fallback."""
-    from dotenv import load_dotenv
-    load_dotenv()
-    api_key = os.getenv("PLANTNET_API_KEY")
+    if not api_key:
+        from dotenv import load_dotenv
+        load_dotenv()
+        api_key = os.getenv("PLANTNET_API_KEY")
     
     if not api_key:
-        return {"error": "PlantNet API Key missing in .env"}
+        return {"error": "PlantNet API Key missing"}
     
     try:
         # Resize for API optimization (max 1024px)
@@ -358,10 +359,6 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray) -> dict:
                         score = round(best.get('score', 0) * 100, 1)
                         species = best.get('species', {})
                         
-                        # Thresholding: If score is extremely low, treat as Unknown to trigger fallbacks
-                        if score < 5.0:
-                             return {"scientific_name": "Unknown Species", "common_names": ["Indeterminate Specimen"], "score": score}
-                             
                         return {
                             "scientific_name": species.get('scientificNameWithoutAuthor') or species.get('scientificName') or "Unknown Species",
                             "common_names": species.get('commonNames', []),
@@ -371,23 +368,24 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray) -> dict:
                             "raw_res": best
                         }
                 else:
-                    last_raw = response.text[:100]
+                    last_raw = f"HTTP {response.status_code}: {response.text[:50]}"
             except Exception as e:
-                last_raw = str(e)
+                last_raw = f"Link Failure: {str(e)}"
                 continue
                 
-        return {"error": f"PlantNet: No botanical matches (Last Raw: {last_raw})"}
+        return {"error": f"PlantNet: {last_raw}"}
     except Exception as e:
-        return {"error": f"PlantNet Linkage Failure: {str(e)}"}
+        return {"error": f"PlantNet Root Failure: {str(e)}"}
 
 
-def identify_disease_with_kindwise(img_bgr: np.ndarray) -> dict:
+def identify_disease_with_kindwise(img_bgr: np.ndarray, api_key: str = None) -> dict:
     """Identify diseases using Kindwise API with multi-provider credential support."""
-    import streamlit as st
-    api_key = os.getenv("CROP_HEALTH_API_KEY") or (st.secrets.get("CROP_HEALTH_API_KEY") if "CROP_HEALTH_API_KEY" in st.secrets else None)
+    if not api_key:
+        import streamlit as st
+        api_key = os.getenv("CROP_HEALTH_API_KEY") or (st.secrets.get("CROP_HEALTH_API_KEY") if "CROP_HEALTH_API_KEY" in st.secrets else None)
 
     if not api_key:
-        return {"error": "Crop Health API Key missing. Please provide via .env, Secrets, or Sidebar Override."}
+        return {"error": "Crop Health API Key missing"}
 
     try:
         # Resize for API optimization
