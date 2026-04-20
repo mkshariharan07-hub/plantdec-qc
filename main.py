@@ -755,6 +755,11 @@ if chat_prompt := st.chat_input("Query the Quantum Oracle..."):
     plant = lr.get('plant', 'specimen')
     disease = lr.get('disease', 'healthy')
     q_risk = lr.get('q', {}).get('label', 'Standard')
+
+    # Pre-calculated diagnostic messages for Dr. Leaf
+    is_healthy = "healthy" in disease.lower()
+    h_status = "Healthy" if is_healthy else "Diseased"
+    h_advice = "Keep up the good care!" if is_healthy else "Don't worry — early detection means we can still help it recover."
     
     # Dr. Leaf's Knowledge Matrix (30 Q&A Pairs)
     DR_LEAF_KNOWLEDGE = {
@@ -773,7 +778,7 @@ if chat_prompt := st.chat_input("Query the Quantum Oracle..."):
         "overwatered": "Overwatered plants have soft, yellow, mushy leaves and wet soil. Underwatered plants have dry, crispy, curling leaves and bone-dry soil. Feel both the leaf and the soil!",
         "diseased leaves": "Absolutely — and as soon as possible! Removing infected leaves stops the disease from spreading and lets the plant focus its energy on healthy new growth.",
         "recover": "With the right care, most plants show improvement within 1 to 3 weeks. Full recovery can take 4–8 weeks depending on how severe the condition was. Stay consistent and be patient! 🌱",
-        "healthy": f"Based on what I can see, your plant appears to be **{('Healthy' if 'healthy' in disease.lower() else 'Diseased')}**. {('Keep up the good care!' if 'healthy' in disease.lower() else \"Don't worry — early detection means we can still help it recover.\")}",
+        "healthy": f"Based on what I can see, your plant appears to be **{h_status}**. {h_advice}",
         "what disease": f"Your plant is showing signs of **{disease}**. I'll walk you through exactly what to do next.",
         "yellow": "Yellow leaves usually mean overwatering, nutrient deficiency, or too little sunlight. Check your watering routine and move the plant to a brighter spot.",
         "brown spots": "Brown spots are often caused by fungal infections, sunburn, or underwatering. Look at the pattern — dry, crispy edges suggest thirst, while soft dark spots suggest fungus.",
