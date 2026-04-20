@@ -434,33 +434,33 @@ with col_out:
         r = st.session_state.last_results
         
         st.markdown(f"""
-        <div class="zenith-card">
-            <p class="metric-title">Critical Specimen</p>
-            <h2 class="glow-text" style="font-size: 2.2rem; margin-bottom: 0.1rem;">{r.get('plant', 'Unknown').upper()}</h2>
-            <p style="font-size:0.9rem; opacity:0.8; margin: 0 0 1.5rem 0; line-height: 1.5;">
-                ID: {r.get('timestamp', 'NEW')}<br/>
-                CO2 Credit: {r.get('carbon', 0)}kg/yr
-            </p>
-            
-            <div style="margin: 1.2rem 0; padding: 18px; background: rgba(16,185,129,0.1); border-radius: 16px; border: 1px solid rgba(16,185,129,0.3); box-shadow: inset 0 0 20px rgba(16,185,129,0.05);">
-                <p style="color: #34d399; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">TIME-TO-FAILURE (TTF):</p>
-                <div style="display:flex; align-items:center; gap:15px;">
-                    <p style="font-size: 2rem; font-weight: 900; margin:0; color: {'#10b981' if r.get('ttf') == 'Optimal' else '#ef4444'}; text-shadow: 0 0 15px {'rgba(16,185,129,0.4)' if r.get('ttf') == 'Optimal' else 'rgba(239,68,68,0.4)'};">{r.get('ttf')}{' ' if r.get('ttf') == 'Optimal' else ' Days'}</p>
-                    <span style="font-size:0.75rem; opacity:0.7; max-width: 150px; line-height: 1.2;">Projected biological collapse threshold.</span>
-                </div>
-            </div>
-            
-            <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(255,255,255,0.03); padding: 12px 18px; border-radius: 14px;">
-                <div>
-                   <p class="metric-title" style="font-size: 0.7rem;">Condition</p>
-                   <p style="font-size:1.4rem; font-weight:700; color: #ffffff;">{r.get('disease', 'Healthy').title()}</p>
-                </div>
-                <span class="badge badge-{'critical' if r.get('q', {}).get('score', 3) > 3 else 'warning' if r.get('q', {}).get('score', 3) > 2 else 'optimal'}" style="box-shadow: 0 0 20px rgba(16,185,129,0.2);">
-                    {r.get('q', {}).get('label', 'Baseline')} Risk
-                </span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+<div class="zenith-card">
+<p class="metric-title">Critical Specimen</p>
+<h2 class="glow-text" style="font-size: 2.2rem; margin-bottom: 0.1rem;">{r.get('plant', 'Unknown').upper()}</h2>
+<p style="font-size:0.9rem; opacity:0.8; margin: 0 0 1.5rem 0; line-height: 1.5;">
+ID: {r.get('timestamp', 'NEW')}<br/>
+CO2 Credit: {r.get('carbon', 0)}kg/yr
+</p>
+
+<div style="margin: 1.2rem 0; padding: 18px; background: rgba(16,185,129,0.1); border-radius: 16px; border: 1px solid rgba(16,185,129,0.3); box-shadow: inset 0 0 20px rgba(16,185,129,0.05);">
+<p style="color: #34d399; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">TIME-TO-FAILURE (TTF):</p>
+<div style="display:flex; align-items:center; gap:15px;">
+<p style="font-size: 2rem; font-weight: 900; margin:0; color: {'#10b981' if r.get('ttf') == 'Optimal' else '#ef4444'}; text-shadow: 0 0 15px {'rgba(16,185,129,0.4)' if r.get('ttf') == 'Optimal' else 'rgba(239,68,68,0.4)'};">{r.get('ttf')}{' ' if r.get('ttf') == 'Optimal' else ' Days'}</p>
+<span style="font-size:0.75rem; opacity:0.7; max-width: 150px; line-height: 1.2;">Projected biological collapse threshold.</span>
+</div>
+</div>
+
+<div style="display:flex; justify-content:space-between; align-items:center; background: rgba(255,255,255,0.03); padding: 12px 18px; border-radius: 14px;">
+<div>
+<p class="metric-title" style="font-size: 0.7rem;">Condition</p>
+<p style="font-size:1.4rem; font-weight:700; color: #ffffff;">{r.get('disease', 'Healthy').title()}</p>
+</div>
+<span class="badge badge-{'critical' if r.get('q', {}).get('score', 3) > 3 else 'warning' if r.get('q', {}).get('score', 3) > 2 else 'optimal'}" style="box-shadow: 0 0 20px rgba(16,185,129,0.2);">
+{r.get('q', {}).get('label', 'Baseline')} Risk
+</span>
+</div>
+</div>
+""", unsafe_allow_html=True)
         
         rtabs = st.tabs(["🧪 Pathology", "🧬 Genomics", "📉 Quantum", "🌈 Spectral", "🛡️ Security", "🛒 Purchase", "📄 Reports"])
         
