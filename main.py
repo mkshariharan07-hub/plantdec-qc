@@ -35,7 +35,9 @@ try:
         identify_plant_with_plantnet,
         identify_disease_with_kindwise,
         get_perenual_care_info,
-        get_disease_info
+        get_disease_info,
+        predict_image,
+        load_model_and_scaler
     )
 except ImportError as e:
     st.error(f"Failed to import core utilities: {e}")
@@ -358,9 +360,22 @@ with col_in:
                     try:
                         status.write("Species ID phase initiated...")
                         pn = identify_plant_with_plantnet(frame)
-                        if not pn.get('results'):
-                            status.update(label="PlantNet 200 OK: No matches found for this specific specimen image. Try a clearer shot.", state="error")
-                            st.stop()
+                        
+                        # Fallback Logic: if PlantNet fails or has no matches, try local model
+                        if "error" in pn or not pn.get('scientific_name'):
+                            status.write("PlantNet inconclusive. Engaging heuristic local model...")
+                            try:
+                                model, scaler = load_model_and_scaler()
+                                pred = predict_image(frame, model, scaler)
+                                # Bridge local prediction to PN-like structure
+                                pn = {
+                                    "scientific_name": pred.get('plant', 'Unknown Specimen'),
+                                    "common_names": [pred.get('plant', 'Unknown Specimen')],
+                                    "score": pred.get('confidence', 0)
+                                }
+                            except Exception as e:
+                                status.write(f"Heuristic fallback failed: {e}")
+                                pn = {"scientific_name": "Unknown Specimen", "common_names": ["Unknown"], "score": 0}
                         
                         status.write("Pathogen matrix synchronization...")
                         kw = identify_disease_with_kindwise(frame)
