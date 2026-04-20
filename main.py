@@ -305,24 +305,32 @@ with st.sidebar:
             st.rerun()
     
     st.divider()
+    st.markdown("### 🛰️ Global Telemetry")
+    t_col1, t_col2 = st.columns(2)
+    t_col1.metric("Signal", f"{random.randint(85, 99)}%", "-2%")
+    t_col2.metric("Uplink", f"{random.randint(12, 48)}kbps")
+    st.caption("Active Satellite: ZENITH-SAT-7 (Encrypted)")
+    
+    st.divider()
     st.markdown("### 🛠 Development Core")
     
     st.markdown("""
     <div class="dev-card">
         <span class="dev-name">Sindhuja R</span>
         <span class="dev-meta">Reg: 226004099</span>
-        <span class="dev-meta">sindhujarajagopalan99@gmail.com</span>
     </div>
     <div class="dev-card">
         <span class="dev-name">Saraswathy</span>
         <span class="dev-meta">Reg: 226004092</span>
-        <span class="dev-meta">saraswathyr1203@gmail.com</span>
     </div>
     <div class="dev-card">
         <span class="dev-name">U. Kiruthika</span>
-        <span class="dev-meta">udhayasuriyankiruthika@gmail.com</span>
     </div>
     """, unsafe_allow_html=True)
+    
+    with st.expander("📝 System Pulse Log", expanded=False):
+        st.caption("Uplink: STABLE")
+        st.code(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Neural Mesh Sync\n[OK] Latency: 12ms\n[OK] Quantum Decryp.\n[MSG] Waveform locked.")
 
 # ===============================
 # MAIN UI
@@ -535,14 +543,29 @@ CO2 Credit: {r.get('carbon', 0)}kg/yr
                 st.caption("Thermal metabolic hyperactivity localized.")
                 
         with rtabs[1]:
-            st.markdown("<h4 style='color:#6ee7b7;'>Pathogen Genomic Fingerprint</h4>", unsafe_allow_html=True)
-            dna = r.get('dna', 'ATCG'*8)
-            st.code(dna, language="text")
-            st.caption("Simulated DNA sequence of the detected pathogen. Highlights indicate mutated high-risk alleles.")
+            st.markdown("<h4 style='color:#6ee7b7;'>🧬 Pathogen Genomic Fingerprint</h4>", unsafe_allow_html=True)
+            col_dna1, col_dna2 = st.columns([1, 1])
+            with col_dna1:
+                dna = r.get('dna', 'ATCG'*8)
+                st.markdown(f"""
+                <div style="background:#01160d; padding:20px; border-radius:12px; border:2px solid #10b981; font-family:monospace; color:#34d399; font-size:1.2rem; letter-spacing:4px; overflow-wrap:break-word;">
+                    {dna[:8]}<br/>{dna[8:16]}<br/>{dna[16:24]}<br/>{dna[24:]}
+                </div>
+                """, unsafe_allow_html=True)
+                st.caption("DNA Sequence: Mutant alleles highlighted in Matrix.")
+            with col_dna2:
+                # Vitality Gauge
+                vitality = 100 - (r.get('q', {}).get('score', 3) * 20) + random.randint(0, 10)
+                st.markdown("<p class='metric-title'>Biological Vitality Index</p>", unsafe_allow_html=True)
+                st.progress(max(0, min(100, vitality)) / 100)
+                st.write(f"Estimated Life Expectancy: **{vitality}% Baseline**")
             
             st.divider()
             st.markdown("<h4 style='color:#6ee7b7;'>🚁 Precision Drone Waypoints</h4>", unsafe_allow_html=True)
-            st.json(r.get('waypoints', []))
+            wps = r.get('waypoints', [])
+            if wps:
+                wp_df = pd.DataFrame(wps)
+                st.map(wp_df, size=20, color='#10b981')
             st.button("EXPORT MAVLINK / DJI-SDK WAYPOINTS", use_container_width=True)
             
         with rtabs[2]:
@@ -591,6 +614,10 @@ CO2 Credit: {r.get('carbon', 0)}kg/yr
             with sc3:
                 st.markdown("<p style='color:#3b82f6; font-size:0.8rem;'>BLUE (HYDRATION)</p>", unsafe_allow_html=True)
                 st.progress(random.uniform(0.1, 0.9))
+            
+            st.divider()
+            if "spectral_img" in r:
+                st.image(cv2.cvtColor(r["spectral_img"], cv2.COLOR_BGR2RGB), use_container_width=True, caption="Spectral Heatmap (Overlay)")
             
             st.divider()
             st.markdown("<h4 style='color:#6ee7b7;'>🛰 Global Incident Dispatch</h4>", unsafe_allow_html=True)
