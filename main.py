@@ -168,7 +168,22 @@ if "chat_history" not in st.session_state:
         {"role": "assistant", "content": "I am Groot... The Quantum Oracle. The universe is entangled. How shall we collapse the wave function of this pathogen today?"}
     ]
 if "last_results" not in st.session_state:
-    st.session_state.last_results = None
+    st.session_state.last_results = {
+        "plant": "UNKNOWN",
+        "timestamp": "12:56:39",
+        "carbon": 1.12,
+        "ttf": "Optimal",
+        "disease": "Healthy/Indeterminate",
+        "q": {"score": 1, "label": "Optimal", "prob": {"0000": 1.0}, "depth": 1, "entanglement": 0.05, "circuit_str": "Quantum Oracle Initialization..."},
+        "dna": "AGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCT",
+        "pathology": "System initialized. Entanglement vectors stabilized. Awaiting biological input for live analysis.",
+        "rx": {"protocol": "Maintain baseline environmental parameters."},
+        "p_cat": "Bio-Stabilizer",
+        "p_link": "https://www.amazon.com/s?k=organic+plant+stabilizer",
+        "roi": 1200,
+        "timeline": {"Startup": "Quantum matrix calibrated.", "Day 7": "Stabilization complete.", "Day 14": "Optimal yield reached."},
+        "waypoints": []
+    }
 if "specimen_history" not in st.session_state:
     st.session_state.specimen_history = []
 if "assistant_mode" not in st.session_state:
@@ -414,28 +429,28 @@ with col_out:
         r = st.session_state.last_results
         
         st.markdown(f"""
-        <div class="zenith-card" style="filter: contrast(1.2) brightness(1.1);">
-            <p class="metric-title">Critical Specimen</p>
-            <h2 class="glow-text" style="margin-bottom:0;">{r.get('plant', 'Unknown').upper()}</h2>
-            <div style="display:flex; justify-content:space-between; font-size:0.8rem; opacity:0.6; margin-top:5px;">
-                <span>ID: {r.get('timestamp', 'NEW')}</span>
-                <span>CO2 Credit: {r.get('carbon', 0)}kg/yr</span>
+        <div class="zenith-card" style="filter: contrast(1.1) brightness(1.1); border-left: 5px solid #10b981;">
+            <p class="metric-title" style="margin-bottom: 0.5rem;">Critical Specimen</p>
+            <h2 class="glow-text" style="margin-bottom:0.2rem; font-size: 2.2rem;">{r.get('plant', 'Unknown').upper()}</h2>
+            <div style="font-size:0.9rem; opacity:0.8; margin-bottom: 1.5rem; line-height: 1.6;">
+                <div style="color: #6ee7b7;">ID: {r.get('timestamp', 'NEW')}</div>
+                <div style="color: #6ee7b7;">CO2 Credit: {r.get('carbon', 0)}kg/yr</div>
             </div>
             
-            <div style="margin: 1rem 0; padding: 15px; background: rgba(16,185,129,0.1); border-radius: 12px; border: 1px solid rgba(16,185,129,0.3);">
-                <p style="color: #34d399; font-weight: 700; margin-bottom: 5px;">TIME-TO-FAILURE (TTF):</p>
+            <div style="margin: 1.2rem 0; padding: 18px; background: rgba(16,185,129,0.1); border-radius: 16px; border: 1px solid rgba(16,185,129,0.3); box-shadow: inset 0 0 20px rgba(16,185,129,0.05);">
+                <p style="color: #34d399; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">TIME-TO-FAILURE (TTF):</p>
                 <div style="display:flex; align-items:center; gap:15px;">
-                    <p style="font-size: 1.8rem; font-weight: 900; margin:0; color: {'#ef4444' if r.get('ttf') != 'Optimal' else '#10b981'};">{r.get('ttf')} {'' if r.get('ttf') == 'Optimal' else 'Days'}</p>
-                    <span style="font-size:0.7rem; opacity:0.7;">Projected biological collapse threshold.</span>
+                    <p style="font-size: 2rem; font-weight: 900; margin:0; color: {'#10b981' if r.get('ttf') == 'Optimal' else '#ef4444'}; text-shadow: 0 0 15px {'rgba(16,185,129,0.4)' if r.get('ttf') == 'Optimal' else 'rgba(239,68,68,0.4)'};">{r.get('ttf')}{' ' if r.get('ttf') == 'Optimal' else ' Days'}</p>
+                    <span style="font-size:0.75rem; opacity:0.7; max-width: 150px; line-height: 1.2;">Projected biological collapse threshold.</span>
                 </div>
             </div>
             
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(255,255,255,0.03); padding: 12px 18px; border-radius: 14px;">
                 <div>
-                   <p class="metric-title">Condition</p>
-                   <p style="font-size:1.4rem; font-weight:700;">{r.get('disease', 'Healthy').title()}</p>
+                   <p class="metric-title" style="font-size: 0.7rem;">Condition</p>
+                   <p style="font-size:1.4rem; font-weight:700; color: #ffffff;">{r.get('disease', 'Healthy').title()}</p>
                 </div>
-                <span class="badge badge-{'critical' if r.get('q', {}).get('score', 3) > 3 else 'warning' if r.get('q', {}).get('score', 3) > 2 else 'optimal'}">
+                <span class="badge badge-{'critical' if r.get('q', {}).get('score', 3) > 3 else 'warning' if r.get('q', {}).get('score', 3) > 2 else 'optimal'}" style="box-shadow: 0 0 20px rgba(16,185,129,0.2);">
                     {r.get('q', {}).get('label', 'Baseline')} Risk
                 </span>
             </div>
@@ -576,6 +591,20 @@ with chat_box:
     for m in st.session_state.chat_history:
         st.chat_message(m["role"]).write(m["content"])
 
-st.chat_input("Processing biometric signal...", disabled=True)
+if chat_prompt := st.chat_input("Query the Quantum Oracle..."):
+    st.session_state.chat_history.append({"role": "user", "content": chat_prompt})
+    
+    # Groot-AI Response Logic
+    p_mode = st.session_state.get('assistant_mode', 'Quantum Oracle')
+    if "risk" in chat_prompt.lower() or "danger" in chat_prompt.lower():
+        reply = "I am Groot... The biological wave function is currently stabilized, but surveillance is mandatory."
+    elif "hello" in chat_prompt.lower() or "hi" in chat_prompt.lower():
+        reply = f"I am Groot. Welcome to the Zenith matrix. I am currently operating in {p_mode} mode."
+    else:
+        reply = "I am Groot... Entanglement confirmed. The botanical data is processing through the neural mesh."
+    
+    st.session_state.chat_history.append({"role": "assistant", "content": reply})
+    st.rerun()
+
 
 st.caption("PlantPulse Zenith v5.0 | Enterprise Agritech Strategy | © 2026")
