@@ -460,8 +460,12 @@ with col_in:
                                 "Garlic": ["garlic", "allium sativum"]
                             }
                             
+                            # Search both name and description for host keywords
+                            diagnostic_text = (kw.get('disease', '') + " " + kw.get('description', '')).lower()
+                            inferred_plant = None
+                            
                             for plant_label, keywords in hosts_matrix.items():
-                                if any(k in disease_name for k in keywords):
+                                if any(k in diagnostic_text for k in keywords):
                                     inferred_plant = plant_label
                                     break
                             
@@ -471,7 +475,7 @@ with col_in:
                             elif HAS_LOCAL_MODEL:
                                 status.write("PlantNet/Kindwise inconclusive. Invoking local neural mesh...")
                                 local_res = predict_image(frame, local_model, local_scaler)
-                                if local_res['confidence'] > 20: # Use local model if confidence is at least 20%
+                                if local_res['confidence'] > 5: # Higher tolerance: better an educated guess than 'Unknown'
                                     pn = {
                                         "scientific_name": local_res['plant'],
                                         "common_names": [local_res['plant']],
