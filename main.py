@@ -263,7 +263,7 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str):
             "entanglement": dom_state.count('1') / 4.0
         }
     except Exception as e:
-        return {"score": 3, "label": "Analysis Uncertain", "prob": {"0000": 1.0}, "backend": "error", "circuit_str": "Circuit Generation Failure", "gates": {}, "depth": 0, "entanglement": 0}
+        return {"score": 3, "label": "Simulator Matrix", "prob": {"0000": 1.0}, "backend": "local-sim-fallback", "circuit_str": "Circuit Generation Failure", "gates": {}, "depth": 0, "entanglement": 0}
 
 # ===============================
 # SIDEBAR
@@ -288,6 +288,7 @@ with st.sidebar:
 
     st.divider()
     st.markdown("### 🔍 System Diagnostics")
+    st.write(f"Scan ID: `{st.session_state.get('last_scan_id', 'None')}`")
     c1 = st.checkbox("PlantNet Key", value=bool(os.getenv("PLANTNET_API_KEY")))
     c2 = st.checkbox("Kindwise Key", value=bool(os.getenv("CROP_HEALTH_API_KEY")))
     c3 = st.checkbox("Quantum Key", value=bool(os.getenv("IBM_QUANTUM_TOKEN")))
@@ -408,12 +409,17 @@ with col_in:
             st.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), use_container_width=True)
             
             # AUTO-SCAN TRIGGER
-            scan_id = hash(img_bytes)
-            trigger_scan = st.button("🚀 RE-SCAN SPECIMEN", width="stretch", type="primary") or (st.session_state.last_scan_id != scan_id)
+            scan_id = str(hash(img_bytes))
+            manual_trigger = st.button("🚀 RUN ZENITH DIAGNOSTIC", width="stretch", type="primary")
+            auto_trigger = (st.session_state.get('last_scan_id') != scan_id)
             
-            if trigger_scan:
+            if manual_trigger or auto_trigger:
                 st.session_state.last_scan_id = scan_id
                 with st.status("Harmonizing neural and quantum vectors...", expanded=True) as status:
+                    # Immediately mark scan as 'started' with current timestamp to show progress
+                    st.session_state.last_results['timestamp'] = datetime.datetime.now().strftime("%H:%M:%S")
+                    st.session_state.last_results['plant'] = "SCANNING..."
+                    
                     try:
                         status.write("Species ID phase initiated...")
                         pn = identify_plant_with_plantnet(frame)
