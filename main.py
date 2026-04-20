@@ -19,6 +19,7 @@ from fpdf import FPDF
 from dotenv import load_dotenv
 import random
 import math
+import hashlib
 
 # Optional Quantum Imports
 try:
@@ -288,7 +289,9 @@ with st.sidebar:
 
     st.divider()
     st.markdown("### 🔍 System Diagnostics")
-    st.write(f"Scan ID: `{st.session_state.get('last_scan_id', 'None')}`")
+    c_sid = st.session_state.get('last_scan_id', 'None')
+    st.write(f"Current Matrix ID: `{c_sid[:8] if c_sid else 'None'}`")
+    st.write(f"Neural Mesh: {'🟢 READY' if HAS_LOCAL_MODEL else '🔴 OFFLINE'}")
     c1 = st.checkbox("PlantNet Key", value=bool(os.getenv("PLANTNET_API_KEY")))
     c2 = st.checkbox("Kindwise Key", value=bool(os.getenv("CROP_HEALTH_API_KEY")))
     c3 = st.checkbox("Quantum Key", value=bool(os.getenv("IBM_QUANTUM_TOKEN")))
@@ -408,12 +411,13 @@ with col_in:
         if frame is not None:
             st.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), use_container_width=True)
             
-            # AUTO-SCAN TRIGGER
-            scan_id = str(hash(img_bytes))
-            manual_trigger = st.button("🚀 RUN ZENITH DIAGNOSTIC", width="stretch", type="primary")
-            auto_trigger = (st.session_state.get('last_scan_id') != scan_id)
+            # MD5-BASED STABLE SCAN TRACKER
+            scan_id = hashlib.md5(img_bytes).hexdigest()
+            manual_run = st.button("🚀 FORCE ZENITH ANALYSIS", width="stretch", type="primary")
+            results_stale = st.session_state.last_results.get('plant') == "UNKNOWN"
+            id_mismatch = (st.session_state.get('last_scan_id') != scan_id)
             
-            if manual_trigger or auto_trigger:
+            if manual_run or id_mismatch or (results_stale and img_bytes):
                 st.session_state.last_scan_id = scan_id
                 with st.status("Harmonizing neural and quantum vectors...", expanded=True) as status:
                     # Immediately mark scan as 'started' with current timestamp to show progress
