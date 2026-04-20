@@ -474,38 +474,41 @@ with col_in:
                                 pn = {"scientific_name": inferred_plant, "common_names": [inferred_plant], "score": 88.0}
                             elif HAS_LOCAL_MODEL:
                                 status.write("PlantNet/Kindwise inconclusive. Invoking local neural mesh...")
-                                local_res = predict_image(frame, local_model, local_scaler)
-                                if local_res['confidence'] > 5: # Higher tolerance: better an educated guess than 'Unknown'
-                                    pn = {
-                                        "scientific_name": local_res['plant'],
-                                        "common_names": [local_res['plant']],
-                                        "score": local_res['confidence']
-                                    }
-                                    status.write(f"Identity resolved via Local Mesh: {local_res['plant']}")
-                                else:
-                                    status.write("Local confidence too low. Using deep-proxy diagnostics...")
+                                try:
+                                    local_res = predict_image(frame, local_model, local_scaler)
+                                    if local_res['confidence'] > 5:
+                                        pn = {
+                                            "scientific_name": local_res['plant'],
+                                            "common_names": [local_res['plant']],
+                                            "score": local_res['confidence']
+                                        }
+                                        status.write(f"Identity resolved via Local Mesh: {local_res['plant']}")
+                                    else:
+                                        status.write("Local confidence too low. Using deep-proxy diagnostics...")
+                                        pn = {"scientific_name": "Unknown Specimen", "common_names": ["Indeterminate Specimen"], "score": 0}
+                                except Exception as model_err:
+                                    status.write(f"Local Mesh failure: {model_err}")
                                     pn = {"scientific_name": "Unknown Specimen", "common_names": ["Indeterminate Specimen"], "score": 0}
                             else:
                                 status.write("Unrecognised biological waveform. Using deep-proxy diagnostics...")
                                 pn = {"scientific_name": "Unknown Specimen", "common_names": ["Indeterminate Specimen"], "score": 0}
-                        else:
-                            # Standard Pathogen Analysis
-                            kw = identify_disease_with_kindwise(frame)
+                        
+                        # PERSIST IDENTITY IMMEDIATELY (Safety checkpoint)
+                        st.session_state.last_results['plant'] = pn.get('scientific_name', 'Unknown Specimen')
+                        st.session_state.last_results['score'] = pn.get('score', 0)
+                        
+                        # 3. Pathogen Phase
+                        kw = identify_disease_with_kindwise(frame)
+                        st.session_state.last_results['disease'] = kw.get('disease', 'Healthy/Indeterminate')
                         
                         status.write("Quantum state entanglement check...")
                         q = analyze_severity_quantum(frame, "Simulator Only" if q_eng == "Simulator Optimized" else "Dynamic")
                         
-                        if "error" in pn:
-                            st.sidebar.error(f"📡 PL@NTNET: {pn['error']}")
-                        if "error" in kw:
-                            st.sidebar.error(f"🩺 CROP.HEALTH: {kw['error']}")
-
-                        plant_key = pn.get('scientific_name') or 'Unknown Specimen'
-                        status.write(f"Retrieving care protocols for {plant_key}...")
-                        
-                        # Fix potential IndexError
+                        # 4. Care Info
+                        plant_key = pn.get('scientific_name', 'Unknown Specimen')
                         c_names = pn.get('common_names', [])
                         c_name = c_names[0] if c_names else plant_key
+                        status.write(f"Retrieving care protocols for {c_name}...")
                         care = get_perenual_care_info(c_name)
 
                         # 5. Build Result Prototype (Safe extraction)
@@ -527,7 +530,7 @@ with col_in:
                             "score": pn.get('score', 0),
                             "q": q,
                             "care": care,
-                            "pathology": kw.get('description') or "Specimen exhibits a stable bio-signature with no dominant pathological vectors detected within current spectral parameters.",
+                            "pathology": kw.get('description') or "Specimen exhibits a stable bio-signature with no dominant pathological vectors detected.",
                             "rx": raw_rx,
                             "p_cat": p_cat,
                             "p_link": f"https://www.amazon.com/s?k={p_search}",
@@ -547,46 +550,26 @@ with col_in:
                             {"lat": 20.59 + random.uniform(-0.001, 0.001), "lon": 78.96 + random.uniform(-0.001, 0.001), "alt": 10}
                             for _ in range(5)
                         ]
-
-                        # 6. Biological Projections
+                        
                         res.update({
-                            "risk_matrix": {
-                                "Fungal": random.randint(10, 90),
-                                "Viral": random.randint(5, 40),
-                                "Bacterial": random.randint(10, 60),
-                                "Nutrient": random.randint(20, 80)
-                            },
-                            "timeline": {
-                                "Immediate": list(raw_rx.values())[0],
-                                "Day 7": "Re-evaluation of spectral load.",
-                                "Day 14": "Microbiome stabilization."
-                            }
+                            "risk_matrix": {"Fungal": random.randint(10, 90), "Viral": random.randint(5, 40), "Bacterial": random.randint(10, 60), "Nutrient": random.randint(20, 80)},
+                            "timeline": {"Immediate": list(raw_rx.values())[0], "Day 7": "Re-evaluation of spectral load.", "Day 14": "Microbiome stabilization."}
                         })
 
-                        # 7. Visual Overlays
+                        # Visual Overlays
                         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                         spectral = cv2.applyColorMap(gray, cv2.COLORMAP_JET)
                         res["spectral_img"] = cv2.addWeighted(frame, 0.6, spectral, 0.4, 0)
-
                         h, w = frame.shape[:2]
                         ch, cw = h//2, w//2
                         res["micro_img"] = frame[max(0, ch-128):min(h, ch+128), max(0, cw-128):min(w, cw+128)]
 
                         st.session_state.last_results = res
                         st.session_state.specimen_history.append({"name": plant_key, "status": res['disease'], "time": res['timestamp']})
-                        status.update(label="Zenith Diagnosis Fulllocked.", state="complete")
+                        status.update(label="Zenith Diagnosis Full-Locked.", state="complete")
                         
-                        # 8. Assistant Synchronization
-                        is_unk = "UNKNOWN" in plant_key.upper() or "INDETERMINATE" in plant_key.upper()
-                        if is_unk:
-                            assistant_msg = f"Bio-Signature locked on **Neural Anomaly**. Taxonomic consensus is currently PENDING. I've initiated a {q.get('label', 'Deep-Scan')} protocol to stabilize the profile."
-                        else:
-                            assistant_msg = f"Scan for **{plant_key}** fully locked. Pathogen matrix indicates **{res['disease']}**. {q.get('label')} threat level established."
-                        
-                        st.session_state.chat_history.append({
-                            "role": "assistant",
-                            "content": assistant_msg
-                        })
+                        assistant_msg = f"Bio-Signature for **{plant_key}** fully locked. Pathogen matrix indicates **{res['disease']}**."
+                        st.session_state.chat_history.append({"role": "assistant", "content": assistant_msg})
                     except Exception as e:
                         st.error(f"Groot-Shield activated. Scan Interrupted: {e}")
                         status.update(label="Hardware/API Desync Detected.", state="error")
