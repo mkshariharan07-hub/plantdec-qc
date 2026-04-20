@@ -375,13 +375,12 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray) -> dict:
 
 
 def identify_disease_with_kindwise(img_bgr: np.ndarray) -> dict:
-    """Identify diseases/health using Kindwise Crop Health API."""
-    from dotenv import load_dotenv
-    load_dotenv()
-    api_key = os.getenv("CROP_HEALTH_API_KEY")
+    """Identify diseases using Kindwise API with multi-provider credential support."""
+    import streamlit as st
+    api_key = os.getenv("CROP_HEALTH_API_KEY") or (st.secrets.get("CROP_HEALTH_API_KEY") if "CROP_HEALTH_API_KEY" in st.secrets else None)
 
     if not api_key:
-        return {"error": "Crop Health API Key missing in .env"}
+        return {"error": "Crop Health API Key missing. Please provide via .env, Secrets, or Sidebar Override."}
 
     try:
         # Resize for API optimization
@@ -409,7 +408,7 @@ def identify_disease_with_kindwise(img_bgr: np.ndarray) -> dict:
         response = requests.post(url, headers=headers, json=payload, timeout=25)
         
         if response.status_code != 200:
-            return {"error": f"Kindwise HTTP {response.status_code}: {response.text[:100]}"}
+            return {"error": f"Kindwise Gateway Rejected (HTTP {response.status_code}): {response.text[:100]}"}
             
         data = response.json()
         result = data.get("result", {})
