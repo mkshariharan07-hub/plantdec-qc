@@ -363,10 +363,13 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray) -> dict:
                             "genus": species.get('genus', {}).get('scientificNameWithoutAuthor'),
                             "raw_res": best
                         }
-            except:
+                else:
+                    last_raw = response.text[:100]
+            except Exception as e:
+                last_raw = str(e)
                 continue
                 
-        return {"error": "PlantNet: No botanical matches found (High Ambiguity)."}
+        return {"error": f"PlantNet: No botanical matches (Last Raw: {last_raw})"}
     except Exception as e:
         return {"error": f"PlantNet Linkage Failure: {str(e)}"}
 
@@ -405,10 +408,9 @@ def identify_disease_with_kindwise(img_bgr: np.ndarray) -> dict:
         
         response = requests.post(url, headers=headers, json=payload, timeout=25)
         
-        if response.status_code == 401:
-            return {"error": "Kindwise 401: Invalid API Key. Check .env"}
+        if response.status_code != 200:
+            return {"error": f"Kindwise HTTP {response.status_code}: {response.text[:100]}"}
             
-        response.raise_for_status()
         data = response.json()
         result = data.get("result", {})
         

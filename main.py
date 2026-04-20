@@ -342,9 +342,9 @@ with st.sidebar:
     
     for k, v in keys.items():
         status_col, label_col = st.sidebar.columns([1, 4])
-        if v:
+        if v and len(str(v)) > 5:
             status_col.markdown("🟢")
-            label_col.caption(f"{k} Detected")
+            label_col.caption(f"{k}: {str(v)[:4]}***")
         else:
             status_col.markdown("🔴")
             label_col.warning(f"{k} Missing")
@@ -354,10 +354,22 @@ with st.sidebar:
         pk = st.text_input("New PlantNet Key", type="password", key="pk_over")
         ck = st.text_input("New Kindwise Key", type="password", key="ck_over")
         if st.button("ACTIVATE CLOUD OVERRIDE"):
-            if pk: os.environ["PLANTNET_API_KEY"] = pk
-            if ck: os.environ["CROP_HEALTH_API_KEY"] = ck
+            if pk: 
+                os.environ["PLANTNET_API_KEY"] = pk
+                st.session_state["pk_manual"] = pk
+            if ck: 
+                os.environ["CROP_HEALTH_API_KEY"] = ck
+                st.session_state["ck_manual"] = ck
             st.toast("Zenith Cloud Matrix Re-calibrated!", icon="⚡")
             st.rerun()
+
+    # Heartbeat Check
+    if st.sidebar.button("📡 PING CLOUD HEARTBEAT"):
+        try:
+            requests.get("https://www.google.com", timeout=5)
+            st.sidebar.success("Heartbeat: ONLINE")
+        except:
+            st.sidebar.error("Heartbeat: OFFLINE (Network Blocked)")
 
 # ===============================
 # MAIN UI
