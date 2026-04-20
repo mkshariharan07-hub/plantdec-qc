@@ -20,6 +20,7 @@ from dotenv import load_dotenv
 import random
 import math
 import hashlib
+import re
 
 # Optional Quantum Imports
 try:
@@ -403,8 +404,10 @@ with col_in:
         uf = st.file_uploader("Ingest specimen data...", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
         if uf: img_bytes = uf.getvalue()
     with tabs[1]:
-        cf = st.camera_input("Scanner activation")
-        if cf: img_bytes = cf.getvalue()
+        cf = st.camera_input("Scanner activation", help="Capturing a photo will override file uploads")
+        if cf: 
+            img_bytes = cf.getvalue()
+            st.session_state["uf_temp"] = None # Clear file upload if camera used
 
     if img_bytes:
         frame = decode_bytes_to_bgr(img_bytes)
@@ -469,7 +472,8 @@ with col_in:
                             inferred_plant = None
                             
                             for plant_label, keywords in hosts_matrix.items():
-                                if any(k in diagnostic_text for k in keywords):
+                                # Use word boundary matching to avoid partial matches (e.g., 'pineapple' matching 'apple')
+                                if any(re.search(rf"\b{re.escape(k)}\b", diagnostic_text) for k in keywords):
                                     inferred_plant = plant_label
                                     break
                             
@@ -480,7 +484,7 @@ with col_in:
                                 status.write("PlantNet/Kindwise inconclusive. Invoking local neural mesh...")
                                 try:
                                     local_res = predict_image(frame, local_model, local_scaler)
-                                    if local_res['confidence'] > 5:
+                                    if local_res['confidence'] > 35: # Safer threshold to avoid false local positives
                                         pn = {
                                             "scientific_name": local_res['plant'],
                                             "common_names": [local_res['plant']],
