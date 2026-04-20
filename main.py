@@ -423,7 +423,12 @@ with col_in:
                             "ttf": q.get('ttf', random.randint(3, 14) if q.get('score', 3) > 2 else "Optimal"),
                             "carbon": round(random.uniform(0.5, 2.5), 2),
                             "dna": "".join(random.choice("ATCG") for _ in range(32)),
-                            "roi": random.randint(150, 1200)
+                            "roi": random.randint(150, 1200),
+                            "npk": {
+                                "Nitrogen": random.randint(20, 85),
+                                "Phosphorus": random.randint(15, 75),
+                                "Potassium": random.randint(30, 95)
+                            }
                         }
 
                         res["waypoints"] = [
@@ -481,14 +486,6 @@ ID: {r.get('timestamp', 'NEW')}<br/>
 CO2 Credit: {r.get('carbon', 0)}kg/yr
 </p>
 
-<div style="margin: 1.2rem 0; padding: 18px; background: rgba(16,185,129,0.1); border-radius: 16px; border: 1px solid rgba(16,185,129,0.3); box-shadow: inset 0 0 20px rgba(16,185,129,0.05);">
-<p style="color: #34d399; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">TIME-TO-FAILURE (TTF):</p>
-<div style="display:flex; align-items:center; gap:15px;">
-<p style="font-size: 2rem; font-weight: 900; margin:0; color: {'#10b981' if r.get('ttf') == 'Optimal' else '#ef4444'}; text-shadow: 0 0 15px {'rgba(16,185,129,0.4)' if r.get('ttf') == 'Optimal' else 'rgba(239,68,68,0.4)'};">{r.get('ttf')}{' ' if r.get('ttf') == 'Optimal' else ' Days'}</p>
-<span style="font-size:0.75rem; opacity:0.7; max-width: 150px; line-height: 1.2;">Projected biological collapse threshold.</span>
-</div>
-</div>
-
 <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(255,255,255,0.03); padding: 12px 18px; border-radius: 14px;">
 <div>
 <p class="metric-title" style="font-size: 0.7rem;">Condition</p>
@@ -520,6 +517,15 @@ CO2 Credit: {r.get('carbon', 0)}kg/yr
                     st.markdown("<h4 style='color:#6ee7b7;'>Remediation Directives</h4>", unsafe_allow_html=True)
                     for k, v in r.get('rx', {}).items():
                         if v: st.success(f"**{k.replace('_',' ').title()}:** {v}")
+                
+                # NPK Visualization
+                st.divider()
+                st.markdown("<h4 style='color:#6ee7b7;'>🧬 NPK Saturation Matrix</h4>", unsafe_allow_html=True)
+                npk = r.get('npk', {"Nitrogen": 50, "Phosphorus": 50, "Potassium": 50})
+                n_col, p_col, k_col = st.columns(3)
+                n_col.metric("Nitrogen (N)", f"{npk['Nitrogen']}%", delta=f"{npk['Nitrogen']-60}%" if npk['Nitrogen'] < 60 else None)
+                p_col.metric("Phosphorus (P)", f"{npk['Phosphorus']}%", delta=f"{npk['Phosphorus']-50}%" if npk['Phosphorus'] < 50 else None)
+                k_col.metric("Potassium (K)", f"{npk['Potassium']}%", delta=f"{npk['Potassium']-70}%" if npk['Potassium'] < 70 else None)
             with col_p2:
                 # 12. Edge-AI Thermal Heatmap
                 st.markdown("<p class='metric-title'>Edge-AI Thermal Profile</p>", unsafe_allow_html=True)
@@ -615,15 +621,93 @@ CO2 Credit: {r.get('carbon', 0)}kg/yr
                 st.success(f"**{day}**: {action}")
 
         with rtabs[6]:
-            if st.button("Download Clinical Dossier"):
-                pdf = FPDF()
-                pdf.add_page()
-                pdf.set_text_color(16, 185, 129)
-                pdf.set_font("helvetica", "B", 24)
-                pdf.cell(0, 20, "PLANTPULSE EMERALD DOSSIER", ln=True, align='C')
-                pdf.set_font("helvetica", "", 12)
-                pdf.multi_cell(0, 10, f"Target: {r.get('plant')}\nCondition: {r.get('disease')}\nPathology: {r.get('pathology')}")
-                st.download_button("Download Bio_Report.pdf", pdf.output(), f"Emerald_{r.get('plant', 'scan')}.pdf", "application/pdf")
+            st.markdown("<h4 style='color:#6ee7b7;'>📄 Clinical Reporting Engine</h4>", unsafe_allow_html=True)
+            st.info("The Zenith engine generates encrypted, clinical-grade PDF dossiers including ROI projections and molecular diagnostics.")
+            
+            if st.button("Generate & Download Bio-Dossier", use_container_width=True, type="primary"):
+                try:
+                    pdf = FPDF()
+                    pdf.add_page()
+                    
+                    # Header
+                    pdf.set_fill_color(1, 22, 13) # Zenith Dark Green
+                    pdf.rect(0, 0, 210, 40, 'F')
+                    pdf.set_text_color(52, 211, 153) # Zenith Green
+                    pdf.set_font("helvetica", "B", 26)
+                    pdf.text(10, 25, "PLANTPULSE ZENITH REPORT")
+                    pdf.set_font("helvetica", "I", 10)
+                    pdf.text(10, 32, "Enterprise Botanical Intelligence & Quantum Diagnostics")
+                    
+                    pdf.set_y(50)
+                    pdf.set_text_color(0, 0, 0)
+                    
+                    # Section: Specimen Identity
+                    pdf.set_font("helvetica", "B", 16)
+                    pdf.set_text_color(16, 185, 129)
+                    pdf.cell(0, 10, "1. SPECIMEN IDENTITY", ln=True)
+                    pdf.set_text_color(0, 0, 0)
+                    pdf.set_font("helvetica", "", 12)
+                    pdf.cell(0, 8, f"Scientific Name: {r.get('plant', 'Unknown').encode('latin-1', 'replace').decode('latin-1')}", ln=True)
+                    pdf.cell(0, 8, f"Common Name: {r.get('common_name', 'N/A').encode('latin-1', 'replace').decode('latin-1')}", ln=True)
+                    pdf.cell(0, 8, f"Scan Timestamp: {r.get('timestamp')}", ln=True)
+                    pdf.cell(0, 8, f"Confidence Score: {r.get('score')}%", ln=True)
+                    
+                    # Section: Pathology
+                    pdf.ln(5)
+                    pdf.set_font("helvetica", "B", 16)
+                    pdf.set_text_color(16, 185, 129)
+                    pdf.cell(0, 10, "2. PATHOLOGICAL DIAGNOSIS", ln=True)
+                    pdf.set_text_color(0, 0, 0)
+                    pdf.set_font("helvetica", "B", 12)
+                    pdf.cell(0, 8, f"Condition: {r.get('disease')}", ln=True)
+                    pdf.set_font("helvetica", "", 11)
+                    pdf.multi_cell(0, 7, f"Clinical Observation: {r.get('pathology').encode('latin-1', 'replace').decode('latin-1')}")
+                    
+                    # Section: NPK & ROI
+                    pdf.ln(5)
+                    pdf.set_font("helvetica", "B", 16)
+                    pdf.set_text_color(16, 185, 129)
+                    pdf.cell(0, 10, "3. BIO-CHEMICAL & ECONOMIC METRICS", ln=True)
+                    pdf.set_text_color(0, 0, 0)
+                    pdf.set_font("helvetica", "", 11)
+                    npk = r.get('npk', {})
+                    pdf.cell(0, 8, f"NPK Saturation: N:{npk.get('Nitrogen')}% | P:{npk.get('Phosphorus')}% | K:{npk.get('Potassium')}%", ln=True)
+                    pdf.cell(0, 8, f"Economic Impact (ROI): -${r.get('roi')} USD Projected Loss", ln=True)
+                    pdf.cell(0, 8, f"Carbon Sequestration: {r.get('carbon')} kg/yr", ln=True)
+                    
+                    # Section: Remediation
+                    pdf.ln(5)
+                    pdf.set_font("helvetica", "B", 16)
+                    pdf.set_text_color(16, 185, 129)
+                    pdf.cell(0, 10, "4. REMEDIATION PROTOCOLS", ln=True)
+                    pdf.set_text_color(0, 0, 0)
+                    pdf.set_font("helvetica", "", 11)
+                    for k, v in r.get('rx', {}).items():
+                        pdf.multi_cell(0, 7, f"- {k.title()}: {str(v).encode('latin-1', 'replace').decode('latin-1')}")
+                    
+                    # Section: Quantum Diagnostic
+                    pdf.ln(5)
+                    pdf.set_font("helvetica", "B", 16)
+                    pdf.set_text_color(16, 185, 129)
+                    pdf.cell(0, 10, "5. QUANTUM ENTANGLEMENT ANALYSIS", ln=True)
+                    pdf.set_text_color(0, 0, 0)
+                    pdf.set_font("helvetica", "", 11)
+                    q = r.get('q', {})
+                    pdf.cell(0, 8, f"Quantum Risk State: {q.get('label')}", ln=True)
+                    pdf.cell(0, 8, f"Circuit Depth: {q.get('depth')}", ln=True)
+                    pdf.cell(0, 8, f"Entanglement Index: {int(q.get('entanglement',0)*100)}%", ln=True)
+                    
+                    pdf_output = pdf.output()
+                    st.download_button(
+                        label="⬇️ Download Final Dossier",
+                        data=pdf_output,
+                        file_name=f"Zenith_Report_{r.get('plant', 'specimen')}_{r.get('timestamp')}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
+                    st.success("Dossier compiled successfully.")
+                except Exception as e:
+                    st.error(f"Dossier Compilation Error: {str(e)}")
     else:
         st.info("Scanner idle. Awaiting specimen input...")
 
@@ -638,15 +722,41 @@ with chat_box:
 if chat_prompt := st.chat_input("Query the Quantum Oracle..."):
     st.session_state.chat_history.append({"role": "user", "content": chat_prompt})
     
-    # Groot-AI Response Logic
+    # Zenith Context-Aware AI Response Logic
     p_mode = st.session_state.get('assistant_mode', 'Quantum Oracle')
-    if "risk" in chat_prompt.lower() or "danger" in chat_prompt.lower():
-        reply = "I am Groot... The biological wave function is currently stabilized, but surveillance is mandatory."
-    elif "hello" in chat_prompt.lower() or "hi" in chat_prompt.lower():
-        reply = f"I am Groot. Welcome to the Zenith matrix. I am currently operating in {p_mode} mode."
-    else:
-        reply = "I am Groot... Entanglement confirmed. The botanical data is processing through the neural mesh."
+    lr = st.session_state.last_results
+    plant = lr.get('plant', 'specimen')
+    disease = lr.get('disease', 'healthy')
+    q_risk = lr.get('q', {}).get('label', 'Standard')
     
+    # Personality-driven Prompting
+    if p_mode == "Quantum Oracle":
+        base = "I am Groot... The quantum wave function of this specimen has collapsed."
+        if "risk" in chat_prompt.lower() or "threat" in chat_prompt.lower():
+            reply = f"{base} Identification of **{disease}** in {plant} indicates a **{q_risk}** risk state in the local matrix."
+        elif "fix" in chat_prompt.lower() or "help" in chat_prompt.lower() or "remedy" in chat_prompt.lower():
+            reply = f"{base} Remediation protocols are locked. I recommend following the {lr.get('p_cat')} directive immediately."
+        else:
+            reply = f"{base} I am detecting high entanglement indices in the {plant}'s biological mesh. The universe is watching."
+            
+    elif p_mode == "Bio-Scientist":
+        base = "[Zenith Bio-Core] Analyzing pathological vectors..."
+        if "risk" in chat_prompt.lower() or "threat" in chat_prompt.lower():
+            reply = f"{base} The specimen '{plant}' shows symptoms of {disease}. Pathogen severity is marked as **{q_risk}** based on cellular entropy."
+        elif "fix" in chat_prompt.lower() or "help" in chat_prompt.lower() or "remedy" in chat_prompt.lower():
+            reply = f"{base} Tactical remediation required: {list(lr.get('rx', {}).values())[0]}. Bio-security protocols suggested."
+        else:
+            reply = f"{base} NPK saturation is currently at {lr.get('npk', {}).get('Nitrogen')}% Nitrogen. Cellular respiration appears {'impeded' if q_risk != 'Optimal' else 'efficient'}."
+            
+    else: # Farm Guardian
+        base = "Steady now... The Guardian system is active."
+        if "risk" in chat_prompt.lower() or "threat" in chat_prompt.lower():
+            reply = f"{base} We've spotted {disease} on your {plant}. It looks like a **{q_risk}** situation. Don't let it spread to the rest of the field."
+        elif "fix" in chat_prompt.lower() or "help" in chat_prompt.lower() or "remedy" in chat_prompt.lower():
+            reply = f"{base} I've listed some steps for you in the directives. Grab some {lr.get('p_cat')} and let's get to work."
+        else:
+            reply = f"{base} The {plant} is under my watch. We'll get through this season together."
+
     st.session_state.chat_history.append({"role": "assistant", "content": reply})
     st.rerun()
 
