@@ -289,7 +289,7 @@ with st.sidebar:
     
     st.divider()
     st.markdown("### 🧬 Assistant Core")
-    st.session_state.assistant_mode = st.selectbox("Personality Matrix", ["Quantum Oracle", "Bio-Scientist", "Farm Guardian"])
+    st.session_state.assistant_mode = st.selectbox("Personality Matrix", ["Dr. Leaf", "Quantum Oracle", "Bio-Scientist", "Farm Guardian"])
     
     with st.expander("📡 Last Scan Diagnostics", expanded=True):
         if st.session_state.get('last_results'):
@@ -723,39 +723,80 @@ if chat_prompt := st.chat_input("Query the Quantum Oracle..."):
     st.session_state.chat_history.append({"role": "user", "content": chat_prompt})
     
     # Zenith Context-Aware AI Response Logic
-    p_mode = st.session_state.get('assistant_mode', 'Quantum Oracle')
+    p_mode = st.session_state.get('assistant_mode', 'Dr. Leaf')
     lr = st.session_state.last_results
     plant = lr.get('plant', 'specimen')
     disease = lr.get('disease', 'healthy')
     q_risk = lr.get('q', {}).get('label', 'Standard')
     
-    # Personality-driven Prompting
-    if p_mode == "Quantum Oracle":
-        base = "I am Groot... The quantum wave function of this specimen has collapsed."
-        if "risk" in chat_prompt.lower() or "threat" in chat_prompt.lower():
-            reply = f"{base} Identification of **{disease}** in {plant} indicates a **{q_risk}** risk state in the local matrix."
-        elif "fix" in chat_prompt.lower() or "help" in chat_prompt.lower() or "remedy" in chat_prompt.lower():
-            reply = f"{base} Remediation protocols are locked. I recommend following the {lr.get('p_cat')} directive immediately."
-        else:
-            reply = f"{base} I am detecting high entanglement indices in the {plant}'s biological mesh. The universe is watching."
-            
-    elif p_mode == "Bio-Scientist":
-        base = "[Zenith Bio-Core] Analyzing pathological vectors..."
-        if "risk" in chat_prompt.lower() or "threat" in chat_prompt.lower():
-            reply = f"{base} The specimen '{plant}' shows symptoms of {disease}. Pathogen severity is marked as **{q_risk}** based on cellular entropy."
-        elif "fix" in chat_prompt.lower() or "help" in chat_prompt.lower() or "remedy" in chat_prompt.lower():
-            reply = f"{base} Tactical remediation required: {list(lr.get('rx', {}).values())[0]}. Bio-security protocols suggested."
-        else:
-            reply = f"{base} NPK saturation is currently at {lr.get('npk', {}).get('Nitrogen')}% Nitrogen. Cellular respiration appears {'impeded' if q_risk != 'Optimal' else 'efficient'}."
-            
-    else: # Farm Guardian
-        base = "Steady now... The Guardian system is active."
-        if "risk" in chat_prompt.lower() or "threat" in chat_prompt.lower():
-            reply = f"{base} We've spotted {disease} on your {plant}. It looks like a **{q_risk}** situation. Don't let it spread to the rest of the field."
-        elif "fix" in chat_prompt.lower() or "help" in chat_prompt.lower() or "remedy" in chat_prompt.lower():
-            reply = f"{base} I've listed some steps for you in the directives. Grab some {lr.get('p_cat')} and let's get to work."
-        else:
-            reply = f"{base} The {plant} is under my watch. We'll get through this season together."
+    # Dr. Leaf's Knowledge Matrix (30 Q&A Pairs)
+    DR_LEAF_KNOWLEDGE = {
+        "brown edges": "Crispy brown edges usually mean low humidity or underwatering. Mist your plant lightly or place a water tray nearby to boost moisture.",
+        "drooping": "Drooping leaves are your plant's way of saying it's thirsty or stressed. Check the soil moisture first — if dry, water it; if soggy, let it breathe.",
+        "small leaves": "Stunted new growth often points to nutrient deficiency or root crowding. Try a balanced fertilizer or consider repotting into a slightly larger container.",
+        "dots": "Those are most likely Spider Mites — very common and treatable! Wipe leaves with a damp cloth and spray with diluted neem oil every 3 days.",
+        "losing leaves": "Sudden leaf drop is usually triggered by temperature shock, overwatering, or a dramatic change in environment. Keep your plant away from cold drafts and air vents.",
+        "sunlight": "Yes! Too much direct sun causes leaf scorch — pale, bleached, or papery patches on leaves. Move your plant to bright but indirect light for recovery.",
+        "black spots": "Black spots are a classic sign of fungal or bacterial disease. Remove affected leaves immediately, avoid overhead watering, and apply a suitable fungicide.",
+        "lower leaves": "Some lower leaf drop is natural as plants grow. But if it's excessive, it could signal overwatering, poor light, or a nutrient imbalance — worth investigating!",
+        "sticky": "Sticky leaves are usually caused by scale insects or aphids secreting a substance called honeydew. Wipe leaves clean and treat with insecticidal soap promptly.",
+        "smell": "A foul smell near the soil is a strong sign of root rot. Remove the plant from its pot, trim any black or mushy roots, and repot in fresh, well-draining soil.",
+        "pale": "Pale or whitish leaves indicate chlorosis — a lack of chlorophyll usually caused by iron or nitrogen deficiency. A good liquid fertilizer should bring the green back.",
+        "remedy": "Yes! Diluted neem oil, baking soda spray, and garlic water are effective home treatments for many fungal and pest-related issues. Always test on one leaf first.",
+        "overwatered": "Overwatered plants have soft, yellow, mushy leaves and wet soil. Underwatered plants have dry, crispy, curling leaves and bone-dry soil. Feel both the leaf and the soil!",
+        "diseased leaves": "Absolutely — and as soon as possible! Removing infected leaves stops the disease from spreading and lets the plant focus its energy on healthy new growth.",
+        "recover": "With the right care, most plants show improvement within 1 to 3 weeks. Full recovery can take 4–8 weeks depending on how severe the condition was. Stay consistent and be patient! 🌱",
+        "healthy": f"Based on what I can see, your plant appears to be **{('Healthy' if 'healthy' in disease.lower() else 'Diseased')}**. {'Keep up the good care!' if 'healthy' in disease.lower() else 'Don\'t worry — early detection means we can still help it recover.'}",
+        "what disease": f"Your plant is showing signs of **{disease}**. I'll walk you through exactly what to do next.",
+        "yellow": "Yellow leaves usually mean overwatering, nutrient deficiency, or too little sunlight. Check your watering routine and move the plant to a brighter spot.",
+        "brown spots": "Brown spots are often caused by fungal infections, sunburn, or underwatering. Look at the pattern — dry, crispy edges suggest thirst, while soft dark spots suggest fungus.",
+        "contagious": f"Yes! If your plant has **{disease}**, it can spread to nearby plants. Isolate it immediately and treat it before returning it to your garden.",
+        "fungal": "Remove the affected leaves, improve air circulation, and apply a mild fungicide or a baking soda spray. Avoid getting the leaves wet when watering.",
+        "curling": "Curling leaves usually signal heat stress, underwatering, or pest activity. Feel the soil — if it's bone dry, give your plant a good drink right away.",
+        "powdery": "That's likely Powdery Mildew — a common fungal disease. Increase air circulation, reduce humidity, and treat with a diluted neem oil or baking soda solution.",
+        "how often": "Do a quick visual check every 3–5 days. Early signs like small spots, wilting, or color changes are much easier to treat before they spread.",
+        "wilted": "Wilting after watering can be a sign of root rot — caused by overwatering and poor drainage. Check the roots; healthy ones are white, while rotten ones are brown and mushy.",
+        "holes": "Tiny holes usually point to pest damage — insects like aphids, caterpillars, or beetles. Inspect the underside of leaves closely and treat with neem oil or insecticidal soap.",
+        "prevent": "Water at the base, not the leaves. Ensure good sunlight and airflow, use clean tools, and avoid overwatering — these simple habits prevent most common diseases.",
+        "eat": f"It depends on the disease. For **{disease}**, it's best to **avoid consuming** affected produce until the plant is fully treated and healthy again.",
+        "worried": "If more than 50% of the leaves are affected, the stem is soft or rotting, or the plant isn't responding to treatment after 2 weeks — it may need urgent intervention or replanting."
+    }
+
+    reply = None
+    # Check knowledge matrix first
+    for key, val in DR_LEAF_KNOWLEDGE.items():
+        if key in chat_prompt.lower():
+            reply = f"**Dr. Leaf:** {val}"
+            break
+
+    if not reply:
+        # Personality-driven Prompting
+        if p_mode == "Dr. Leaf":
+            reply = f"**Dr. Leaf:** I'm here to help with your {plant}. It seems to be experiencing {disease}. What specific symptoms are you observing?"
+        elif p_mode == "Quantum Oracle":
+            base = "I am Groot... The quantum wave function of this specimen has collapsed."
+            if "risk" in chat_prompt.lower() or "threat" in chat_prompt.lower():
+                reply = f"{base} Identification of **{disease}** in {plant} indicates a **{q_risk}** risk state in the local matrix."
+            elif "fix" in chat_prompt.lower() or "help" in chat_prompt.lower() or "remedy" in chat_prompt.lower():
+                reply = f"{base} Remediation protocols are locked. I recommend following the {lr.get('p_cat')} directive immediately."
+            else:
+                reply = f"{base} I am detecting high entanglement indices in the {plant}'s biological mesh. The universe is watching."
+        elif p_mode == "Bio-Scientist":
+            base = "[Zenith Bio-Core] Analyzing pathological vectors..."
+            if "risk" in chat_prompt.lower() or "threat" in chat_prompt.lower():
+                reply = f"{base} The specimen '{plant}' shows symptoms of {disease}. Pathogen severity is marked as **{q_risk}** based on cellular entropy."
+            elif "fix" in chat_prompt.lower() or "help" in chat_prompt.lower() or "remedy" in chat_prompt.lower():
+                reply = f"{base} Tactical remediation required: {list(lr.get('rx', {}).values())[0]}. Bio-security protocols suggested."
+            else:
+                reply = f"{base} NPK saturation is currently at {lr.get('npk', {}).get('Nitrogen')}% Nitrogen. Cellular respiration appears {'impeded' if q_risk != 'Optimal' else 'efficient'}."
+        else: # Farm Guardian
+            base = "Steady now... The Guardian system is active."
+            if "risk" in chat_prompt.lower() or "threat" in chat_prompt.lower():
+                reply = f"{base} We've spotted {disease} on your {plant}. It looks like a **{q_risk}** situation. Don't let it spread to the rest of the field."
+            elif "fix" in chat_prompt.lower() or "help" in chat_prompt.lower() or "remedy" in chat_prompt.lower():
+                reply = f"{base} I've listed some steps for you in the directives. Grab some {lr.get('p_cat')} and let's get to work."
+            else:
+                reply = f"{base} The {plant} is under my watch. We'll get through this season together."
 
     st.session_state.chat_history.append({"role": "assistant", "content": reply})
     st.rerun()

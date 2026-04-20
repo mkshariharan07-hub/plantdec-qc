@@ -387,7 +387,7 @@ def identify_disease_with_kindwise(img_bgr: np.ndarray) -> dict:
         _, img_encoded = cv2.imencode(".jpg", img_bgr)
         img_base64 = base64.b64encode(img_encoded.tobytes()).decode('ascii')
         
-        url = "https://api.crop.health/v1/identification"
+        url = "https://crop.kindwise.com/api/v1/identification"
         headers = {
             "Api-Key": api_key,
             "Content-Type": "application/json"
