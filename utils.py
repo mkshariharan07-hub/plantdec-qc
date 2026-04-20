@@ -346,6 +346,7 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray) -> dict:
         data = {'organs': ['auto']}
         
         # Strategy: Try 'all' first, fallback to 'weurope' if rejected
+        last_raw = "None"
         for project in ["all", "weurope"]:
             url = f"https://my-api.plantnet.org/v2/identify/{project}?api-key={api_key}"
             try:

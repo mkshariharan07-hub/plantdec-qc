@@ -382,6 +382,21 @@ with st.sidebar:
             st.rerun()
 
     # Heartbeat Check
+    if st.sidebar.button("📡 TEST PLANTNET UPLINK"):
+        pn_key = keys.get("PLANTNET")
+        if not pn_key:
+            st.sidebar.error("Key Missing")
+        else:
+            try:
+                test_url = f"https://my-api.plantnet.org/v2/projects?api-key={pn_key}"
+                test_res = requests.get(test_url, timeout=10)
+                if test_res.status_code == 200:
+                    st.sidebar.success(f"Link Stable (Ping: {len(test_res.json())} projects)")
+                else:
+                    st.sidebar.error(f"Link Rejected: HTTP {test_res.status_code}")
+            except Exception as e:
+                st.sidebar.error(f"Uplink Failed: {e}")
+
     if st.sidebar.button("📡 PING CLOUD HEARTBEAT"):
         try:
             requests.get("https://www.google.com", timeout=5)
