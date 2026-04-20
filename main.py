@@ -454,6 +454,11 @@ with col_in:
                         status.write("Species ID phase initiated...")
                         pn = identify_plant_with_plantnet(frame)
                         
+                        # LOG FOR DEEP-DEBUG
+                        with open("api_log.txt", "a") as f:
+                            f.write(f"--- SCAN AT {datetime.datetime.now()} ---\n")
+                            f.write(f"PlantNet Outcome: {pn}\n")
+                        
                         # 100% Cloud-Based Identification Pipeline (Zenith Synapse-V)
                         is_weak = "error" in pn or not pn.get('scientific_name') or pn.get('scientific_name').upper() in ["UNKNOWN SPECIMEN", "UNKNOWN SPECIES", "UNKNOWN"]
                         unstable = pn.get('score', 0) < 15.0 and not hard_guess
@@ -718,7 +723,7 @@ CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon',
             mcol2.metric("Biological Qubits", "4 (Entangled)")
             mcol3.metric("Entanglement Index", f"{int(q_data.get('entanglement', 0)*100)}%")
             
-            st.markdown("<p class='metric-title'>Biological Bloch Sphere (Simulated)</p>", unsafe_allow_html=True)
+            st.markdown("<p class='metric-title'> Biological Bloch Sphere (Simulated)</p>", unsafe_allow_html=True)
             import plotly.graph_objects as go
             import math
             ent = q_data.get('entropy', 0.5)
