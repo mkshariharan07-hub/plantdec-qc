@@ -357,7 +357,7 @@ with col_in:
                         if "error" in kw:
                             st.warning(f"Pathogen analysis failed: {kw['error']}")
 
-                        plant_key = pn.get('scientific_name', 'Unknown')
+                        plant_key = pn.get('scientific_name') or pn.get('error') or 'Unknown Specimen'
                         status.write(f"Retrieving care protocols for {plant_key}...")
                         
                         # Fix potential IndexError

@@ -346,17 +346,29 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray) -> dict:
         response.raise_for_status()
         
         res = response.json()
+        
+        # DEBUG: Log the full response for troubleshooting
+        import json
+        with open("plantnet_debug.json", "w") as f:
+            json.dump(res, f, indent=4)
+            
         if not res.get('results'):
-            return {"error": "No matches found."}
+            return {"error": f"PlantNet found no matches. (Status: {response.status_code})"}
             
         best = res['results'][0]
         species = best.get('species', {})
+        
+        # Robust name extraction
+        s_name = species.get('scientificNameWithoutAuthor') or species.get('scientificName') or "Unknown Species"
+        c_names = species.get('commonNames', [])
+        
         return {
-            "scientific_name": species.get('scientificNameWithoutAuthor'),
-            "common_names": species.get('commonNames', []),
+            "scientific_name": s_name,
+            "common_names": c_names,
             "score": round(best.get('score', 0) * 100, 1),
             "family": species.get('family', {}).get('scientificNameWithoutAuthor'),
-            "genus": species.get('genus', {}).get('scientificNameWithoutAuthor')
+            "genus": species.get('genus', {}).get('scientificNameWithoutAuthor'),
+            "raw_res": best # For further depth
         }
     except Exception as e:
         return {"error": f"PlantNet Error: {str(e)}"}
