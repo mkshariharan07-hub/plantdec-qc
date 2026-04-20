@@ -28,20 +28,16 @@ try:
 except ImportError:
     HAS_QUANTUM = False
 
-# Shared utilities
-try:
-    from utils import (
-        decode_bytes_to_bgr,
-        identify_plant_with_plantnet,
-        identify_disease_with_kindwise,
-        get_perenual_care_info,
-        get_disease_info,
-        predict_image,
-        load_model_and_scaler
-    )
-except ImportError as e:
-    st.error(f"Failed to import core utilities: {e}")
-    st.stop()
+# Core Utilities
+from utils import (
+    decode_bytes_to_bgr,
+    identify_plant_with_plantnet,
+    identify_disease_with_kindwise,
+    get_perenual_care_info,
+    get_disease_info,
+    predict_image,
+    load_model_and_scaler
+)
 
 load_dotenv()
 
