@@ -483,7 +483,7 @@ with col_in:
                             disease_name = kw.get('disease', '').lower()
                             inferred_plant = None
                             
-                            # Enterprise Host Extraction Matrix
+                            # Enterprise Host Extraction Matrix (V6 - Deep Expansion)
                             hosts_matrix = {
                                 "Apple": ["apple", "malus"],
                                 "Paddy/Rice": ["paddy", "rice", "oryza"],
@@ -495,11 +495,11 @@ with col_in:
                                 "Wheat": ["wheat", "triticum"],
                                 "Cotton": ["cotton", "gossypium"],
                                 "Coffee": ["coffee", "coffea"],
-                                "Citrus": ["citrus", "orange", "lemon", "lime"],
+                                "Citrus": ["citrus", "orange", "lemon", "lime", "calamondin", "pomelo"],
                                 "Strawberry": ["strawberry", "fragaria"],
                                 "Mango": ["mango", "mangifera"],
-                                "Chilli/Pepper": ["chilli", "pepper", "capsicum"],
-                                "Brinjal/Eggplant": ["brinjal", "eggplant", "solanum melongena"],
+                                "Chilli/Pepper": ["chilli", "pepper", "capsicum", "bell pepper", "chili"],
+                                "Brinjal/Eggplant": ["brinjal", "eggplant", "solanum melongena", "aubergine"],
                                 "Soybean": ["soybean", "glycine max"],
                                 "Sugarcane": ["sugarcane", "saccharum"],
                                 "Rubber": ["rubber", "hevea"],
@@ -507,8 +507,33 @@ with col_in:
                                 "Coconut": ["coconut", "cocos nucifera"],
                                 "Cabbage": ["cabbage", "brassica"],
                                 "Cucumber": ["cucumber", "cucumis"],
-                                "Onion": ["onion", "allium"],
-                                "Garlic": ["garlic", "allium sativum"]
+                                "Onion": ["onion", "allium cepa"],
+                                "Garlic": ["garlic", "allium sativum"],
+                                "Rose": ["rose", "rosa"],
+                                "Hibiscus": ["hibiscus"],
+                                "Peanut/Groundnut": ["peanut", "groundnut", "arachis"],
+                                "Guava": ["guava", "psidium"],
+                                "Papaya": ["papaya", "carica"],
+                                "Pomegranate": ["pomegranate", "punica"],
+                                "Ginger": ["ginger", "zingiber"],
+                                "Turmeric": ["turmeric", "curcuma"],
+                                "Black Pepper": ["black pepper", "piper nigrum"],
+                                "Cardamom": ["cardamom", "elettaria"],
+                                "Tea": ["tea", "camellia sinensis"],
+                                "Areca Nut": ["areca", "betel"],
+                                "Pea": ["pea", "pisum"],
+                                "Bean": ["bean", "phaseolus"],
+                                "Okra/Ladyfinger": ["okra", "ladyfinger", "abelmoschus"],
+                                "Sunflower": ["sunflower", "helianthus"],
+                                "Mustard": ["mustard", "brassica juncea"],
+                                "Millet": ["millet", "pennisetum", "sorghum", "ragi"],
+                                "Rubber": ["rubber", "hevea"],
+                                "Teak": ["teak", "tectona"],
+                                "Sandalwood": ["sandalwood", "santalum"],
+                                "Neem": ["neem", "azadirachta"],
+                                "Aloe Vera": ["aloe"],
+                                "Jackfruit": ["jackfruit", "artocarpus"],
+                                "Durian": ["durian", "durio"]
                             }
                             
                             # Search both name and description for host keywords
@@ -528,7 +553,7 @@ with col_in:
                                 status.write("PlantNet/Kindwise inconclusive. Invoking local neural mesh...")
                                 try:
                                     local_res = predict_image(frame, local_model, local_scaler)
-                                    if local_res['confidence'] > 35: # Safer threshold to avoid false local positives
+                                    if local_res['confidence'] > (5 if hard_guess else 35): # Safer threshold to avoid false local positives
                                         pn = {
                                             "scientific_name": local_res['plant'],
                                             "common_names": [local_res['plant']],
