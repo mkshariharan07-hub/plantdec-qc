@@ -350,30 +350,33 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray, api_key: str = None) -> di
         last_raw = "None"
         for project in ["all", "weurope"]:
             url = f"https://my-api.plantnet.org/v2/identify/{project}?api-key={api_key}"
-            try:
-                # SSL Verification bypass for Windows environment compatibility
-                response = requests.post(url, files=files, data=data, timeout=30, verify=False)
-                if response.status_code == 200:
-                    res = response.json()
-                    if res.get('results'):
-                        best = res['results'][0]
-                        score = round(best.get('score', 0) * 100, 1)
-                        species = best.get('species', {})
-                        
-                        return {
-                            "scientific_name": species.get('scientificNameWithoutAuthor') or species.get('scientificName') or "Unknown Species",
-                            "common_names": species.get('commonNames', []),
-                            "score": score,
-                            "family": species.get('family', {}).get('scientificNameWithoutAuthor'),
-                            "genus": species.get('genus', {}).get('scientificNameWithoutAuthor'),
-                            "raw_res": best
-                        }
-                else:
-                    last_raw = f"HTTP {response.status_code}: {response.text[:50]}"
-            except Exception as e:
-                last_raw = f"Link Failure: {str(e)}"
-                continue
-                
+            for attempt in range(2): # Retry once for transient failures
+                try:
+                    # SSL Verification bypass for Windows environment compatibility
+                    # Increased timeout to 60s for slow uplinks
+                    response = requests.post(url, files=files, data=data, timeout=60, verify=False)
+                    if response.status_code == 200:
+                        res = response.json()
+                        if res.get('results'):
+                            best = res['results'][0]
+                            score = round(best.get('score', 0) * 100, 1)
+                            species = best.get('species', {})
+                            
+                            return {
+                                "scientific_name": species.get('scientificNameWithoutAuthor') or species.get('scientificName') or "Unknown Species",
+                                "common_names": species.get('commonNames', []),
+                                "score": score,
+                                "family": species.get('family', {}).get('scientificNameWithoutAuthor'),
+                                "genus": species.get('genus', {}).get('scientificNameWithoutAuthor'),
+                                "raw_res": best
+                            }
+                    else:
+                        last_raw = f"HTTP {response.status_code}: {response.text[:50]}"
+                        break # Don't retry on rejection, only on timeout/failure
+                except Exception as e:
+                    last_raw = f"Link Failure: {str(e)}"
+                    if attempt == 0: continue # Retry on first failure
+                    
         return {"error": f"PlantNet: {last_raw}"}
     except Exception as e:
         return {"error": f"PlantNet Root Failure: {str(e)}"}
@@ -411,8 +414,9 @@ def identify_disease_with_kindwise(img_bgr: np.ndarray, api_key: str = None) -> 
             "health": "all"
         }
         
+        # Increased timeout to 60s for slow uplinks
         # SSL Verification bypass for Windows environment compatibility
-        response = requests.post(url, headers=headers, json=payload, timeout=25, verify=False)
+        response = requests.post(url, headers=headers, json=payload, timeout=60, verify=False)
         
         if response.status_code != 200:
             return {"error": f"Kindwise Gateway Rejected (HTTP {response.status_code}): {response.text[:100]}"}
