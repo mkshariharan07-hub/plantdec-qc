@@ -167,7 +167,7 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
         {"role": "assistant", "content": "I am Groot... The Quantum Oracle. The universe is entangled. How shall we collapse the wave function of this pathogen today?"}
     ]
-if "last_results" not in st.session_state:
+if "last_results" not in st.session_state or st.session_state.last_results is None:
     st.session_state.last_results = {
         "plant": "UNKNOWN",
         "timestamp": "12:56:39",
@@ -429,13 +429,13 @@ with col_out:
         r = st.session_state.last_results
         
         st.markdown(f"""
-        <div class="zenith-card" style="filter: contrast(1.1) brightness(1.1); border-left: 5px solid #10b981;">
-            <p class="metric-title" style="margin-bottom: 0.5rem;">Critical Specimen</p>
-            <h2 class="glow-text" style="margin-bottom:0.2rem; font-size: 2.2rem;">{r.get('plant', 'Unknown').upper()}</h2>
-            <div style="font-size:0.9rem; opacity:0.8; margin-bottom: 1.5rem; line-height: 1.6;">
-                <div style="color: #6ee7b7;">ID: {r.get('timestamp', 'NEW')}</div>
-                <div style="color: #6ee7b7;">CO2 Credit: {r.get('carbon', 0)}kg/yr</div>
-            </div>
+        <div class="zenith-card">
+            <p class="metric-title">Critical Specimen</p>
+            <h2 class="glow-text" style="font-size: 2.2rem; margin-bottom: 0.1rem;">{r.get('plant', 'Unknown').upper()}</h2>
+            <p style="font-size:0.9rem; opacity:0.8; margin: 0 0 1.5rem 0; line-height: 1.5;">
+                ID: {r.get('timestamp', 'NEW')}<br/>
+                CO2 Credit: {r.get('carbon', 0)}kg/yr
+            </p>
             
             <div style="margin: 1.2rem 0; padding: 18px; background: rgba(16,185,129,0.1); border-radius: 16px; border: 1px solid rgba(16,185,129,0.3); box-shadow: inset 0 0 20px rgba(16,185,129,0.05);">
                 <p style="color: #34d399; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">TIME-TO-FAILURE (TTF):</p>
