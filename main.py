@@ -508,22 +508,28 @@ with col_out:
     if st.session_state.last_results:
         r = st.session_state.last_results
         
+        p_name = r.get('plant', 'Unknown').upper()
+        p_status = r.get('disease', 'Healthy').title()
+        is_unknown = "UNKNOWN" in p_name or "INDETERMINATE" in p_name
+        
         st.markdown(f"""
 <div class="zenith-card">
-<p class="metric-title">Critical Specimen</p>
-<h2 style="font-size: 2.2rem; margin-bottom: 0.1rem; color: #34d399; text-shadow: 0 0 25px rgba(16, 185, 129, 0.7); font-weight: 800;">{r.get('plant', 'Unknown').upper()}</h2>
+<p class="metric-title">{'Neural Mesh Sync' if is_unknown else 'Critical Specimen'}</p>
+<h2 style="font-size: 1.8rem; margin-bottom: 0.1rem; color: #34d399; text-shadow: 0 0 25px rgba(16, 185, 129, 0.7); font-weight: 800; letter-spacing: 1px;">
+    {p_name if not is_unknown else "AWAITING NEURAL CONSENSUS"}
+</h2>
 <p style="font-size:0.9rem; opacity:0.8; margin: 0 0 1.5rem 0; line-height: 1.5;">
-ID: {r.get('timestamp', 'NEW')}<br/>
-CO2 Credit: {r.get('carbon', 0)}kg/yr
+ID: {r.get('timestamp', 'NEW')} | Uplink: STABLE<br/>
+CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon', 0)}kg/yr</span>
 </p>
 
-<div style="display:flex; justify-content:space-between; align-items:center; background: rgba(255,255,255,0.03); padding: 12px 18px; border-radius: 14px;">
+<div style="display:flex; justify-content:space-between; align-items:center; background: rgba(0,0,0,0.2); padding: 12px 18px; border-radius: 14px; border: 1px solid rgba(16,185,129,0.1);">
 <div>
-<p class="metric-title" style="font-size: 0.7rem;">Condition</p>
-<p style="font-size:1.4rem; font-weight:700; color: #ffffff;">{r.get('disease', 'Healthy').title()}</p>
+<p class="metric-title" style="font-size: 0.65rem;">System Diagnosis</p>
+<p style="font-size:1.1rem; font-weight:700; color: #ffffff;">{p_status if not is_unknown else "Lock: PENDING"}</p>
 </div>
 <span class="badge badge-{'critical' if r.get('q', {}).get('score', 3) > 3 else 'warning' if r.get('q', {}).get('score', 3) > 2 else 'optimal'}" style="box-shadow: 0 0 20px rgba(16,185,129,0.2);">
-{r.get('q', {}).get('label', 'Baseline')} Risk
+{'Quantum Uncertainty' if is_unknown else f"{r.get('q', {}).get('label', 'Baseline')} Risk"}
 </span>
 </div>
 </div>
