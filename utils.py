@@ -326,7 +326,7 @@ def predict_image(img_bgr: np.ndarray, model, scaler=None) -> dict:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def identify_plant_with_plantnet(img_bgr: np.ndarray) -> dict:
-    """Identify plant using PlantNet API (Scientific & Common names)."""
+    """Identify plant using PlantNet API with adaptive flora fallback."""
     from dotenv import load_dotenv
     load_dotenv()
     api_key = os.getenv("PLANTNET_API_KEY")
@@ -345,32 +345,28 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray) -> dict:
         files = [('images', ('image.jpg', img_encoded.tobytes(), 'image/jpeg'))]
         data = {'organs': ['auto']}
         
-        # 'all' searches across all floras for maximum coverage
-        url = f"https://my-api.plantnet.org/v2/identify/all?api-key={api_key}"
-        response = requests.post(url, files=files, data=data, timeout=20)
-        
-        if response.status_code == 404:
-            return {"error": "PlantNet 404: Flora 'all' not accessible with this key."}
-        if response.status_code == 401:
-            return {"error": "PlantNet 401: Invalid API Key. Check .env"}
-            
-        response.raise_for_status()
-        res = response.json()
-        
-        if not res.get('results'):
-            return {"error": "PlantNet: No botanical matches found for this specimen."}
-            
-        best = res['results'][0]
-        species = best.get('species', {})
-        
-        return {
-            "scientific_name": species.get('scientificNameWithoutAuthor') or species.get('scientificName') or "Unknown Species",
-            "common_names": species.get('commonNames', []),
-            "score": round(best.get('score', 0) * 100, 1),
-            "family": species.get('family', {}).get('scientificNameWithoutAuthor'),
-            "genus": species.get('genus', {}).get('scientificNameWithoutAuthor'),
-            "raw_res": best
-        }
+        # Strategy: Try 'all' first, fallback to 'weurope' if rejected
+        for project in ["all", "weurope"]:
+            url = f"https://my-api.plantnet.org/v2/identify/{project}?api-key={api_key}"
+            try:
+                response = requests.post(url, files=files, data=data, timeout=30)
+                if response.status_code == 200:
+                    res = response.json()
+                    if res.get('results'):
+                        best = res['results'][0]
+                        species = best.get('species', {})
+                        return {
+                            "scientific_name": species.get('scientificNameWithoutAuthor') or species.get('scientificName') or "Unknown Species",
+                            "common_names": species.get('commonNames', []),
+                            "score": round(best.get('score', 0) * 100, 1),
+                            "family": species.get('family', {}).get('scientificNameWithoutAuthor'),
+                            "genus": species.get('genus', {}).get('scientificNameWithoutAuthor'),
+                            "raw_res": best
+                        }
+            except:
+                continue
+                
+        return {"error": "PlantNet: No botanical matches found (High Ambiguity)."}
     except Exception as e:
         return {"error": f"PlantNet Linkage Failure: {str(e)}"}
 
