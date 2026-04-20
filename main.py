@@ -277,6 +277,7 @@ with st.sidebar:
     with st.expander("🛠 Matrix Configuration", expanded=False):
         q_eng = st.selectbox("Quantum Engine", ["Dynamic (Hybrid)", "Simulator Optimized"])
         api_depth = st.slider("Discovery Depth", 1, 10, 7)
+        hard_guess = st.toggle("Hard-Guess Mode", value=True, help="Bypass confidence gates to force a result")
     
     st.divider()
     st.markdown("### Clinical Status")
@@ -417,15 +418,17 @@ with col_in:
     st.subheader("📡 Specimen Acquisition")
     tabs = st.tabs(["📁 Digital Dossier", "📷 Bio-Scanner"])
     
-    img_bytes = None
+    if "img_bytes" not in st.session_state:
+        st.session_state.img_bytes = None
+
     with tabs[0]:
         uf = st.file_uploader("Ingest specimen data...", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
-        if uf: img_bytes = uf.getvalue()
+        if uf: st.session_state.img_bytes = uf.getvalue()
     with tabs[1]:
         cf = st.camera_input("Scanner activation", help="Capturing a photo will override file uploads")
-        if cf: 
-            img_bytes = cf.getvalue()
-            st.session_state["uf_temp"] = None # Clear file upload if camera used
+        if cf: st.session_state.img_bytes = cf.getvalue()
+
+    img_bytes = st.session_state.img_bytes
 
     if img_bytes:
         frame = decode_bytes_to_bgr(img_bytes)
@@ -452,7 +455,10 @@ with col_in:
                         pn = identify_plant_with_plantnet(frame)
                         
                         # 100% Cloud-Based Identification Pipeline (Zenith Synapse-V)
-                        if "error" in pn or not pn.get('scientific_name') or pn.get('scientific_name') in ["Unknown Specimen", "Unknown Species", "Unknown"]:
+                        is_weak = "error" in pn or not pn.get('scientific_name') or pn.get('scientific_name').upper() in ["UNKNOWN SPECIMEN", "UNKNOWN SPECIES", "UNKNOWN"]
+                        unstable = pn.get('score', 0) < 15.0 and not hard_guess
+
+                        if is_weak or unstable:
                             status.write("PlantNet inconclusive. Scaling to Pathogen Path-Mining...")
                             # 1. Higher-Depth Pathogen Identification
                             kw = identify_disease_with_kindwise(frame)
