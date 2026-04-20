@@ -354,11 +354,17 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray) -> dict:
                     res = response.json()
                     if res.get('results'):
                         best = res['results'][0]
+                        score = round(best.get('score', 0) * 100, 1)
                         species = best.get('species', {})
+                        
+                        # Thresholding: If score is extremely low, treat as Unknown to trigger fallbacks
+                        if score < 5.0:
+                             return {"scientific_name": "Unknown Species", "common_names": ["Indeterminate Specimen"], "score": score}
+                             
                         return {
                             "scientific_name": species.get('scientificNameWithoutAuthor') or species.get('scientificName') or "Unknown Species",
                             "common_names": species.get('commonNames', []),
-                            "score": round(best.get('score', 0) * 100, 1),
+                            "score": score,
                             "family": species.get('family', {}).get('scientificNameWithoutAuthor'),
                             "genus": species.get('genus', {}).get('scientificNameWithoutAuthor'),
                             "raw_res": best

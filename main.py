@@ -42,6 +42,16 @@ from utils import (
 load_dotenv()
 
 # ===============================
+# LOCAL MODEL LOADING (Zenith Bio-Core)
+# ===============================
+try:
+    local_model, local_scaler = load_model_and_scaler()
+    HAS_LOCAL_MODEL = True
+except Exception as e:
+    HAS_LOCAL_MODEL = False
+    print(f"Local Model Load Failed: {e}")
+
+# ===============================
 # PAGE CONFIG
 # ===============================
 st.set_page_config(
@@ -409,7 +419,7 @@ with col_in:
                         pn = identify_plant_with_plantnet(frame)
                         
                         # 100% Cloud-Based Identification Pipeline (Zenith Synapse-V)
-                        if "error" in pn or not pn.get('scientific_name') or pn.get('scientific_name') == "Unknown Specimen":
+                        if "error" in pn or not pn.get('scientific_name') or pn.get('scientific_name') in ["Unknown Specimen", "Unknown Species", "Unknown"]:
                             status.write("PlantNet inconclusive. Scaling to Pathogen Path-Mining...")
                             # 1. Higher-Depth Pathogen Identification
                             kw = identify_disease_with_kindwise(frame)
@@ -428,11 +438,20 @@ with col_in:
                                 "Wheat": ["wheat", "triticum"],
                                 "Cotton": ["cotton", "gossypium"],
                                 "Coffee": ["coffee", "coffea"],
-                                "Citrus": ["citrus", "orange", "lemon"],
+                                "Citrus": ["citrus", "orange", "lemon", "lime"],
                                 "Strawberry": ["strawberry", "fragaria"],
                                 "Mango": ["mango", "mangifera"],
-                                "Chilli": ["chilli", "pepper", "capsicum"],
-                                "Brinjal": ["brinjal", "eggplant", "solanum melongena"]
+                                "Chilli/Pepper": ["chilli", "pepper", "capsicum"],
+                                "Brinjal/Eggplant": ["brinjal", "eggplant", "solanum melongena"],
+                                "Soybean": ["soybean", "glycine max"],
+                                "Sugarcane": ["sugarcane", "saccharum"],
+                                "Rubber": ["rubber", "hevea"],
+                                "Cashew": ["cashew", "anacardium"],
+                                "Coconut": ["coconut", "cocos nucifera"],
+                                "Cabbage": ["cabbage", "brassica"],
+                                "Cucumber": ["cucumber", "cucumis"],
+                                "Onion": ["onion", "allium"],
+                                "Garlic": ["garlic", "allium sativum"]
                             }
                             
                             for plant_label, keywords in hosts_matrix.items():
@@ -443,6 +462,19 @@ with col_in:
                             if inferred_plant:
                                 status.write(f"Identity recovered via Bio-Signature: {inferred_plant}")
                                 pn = {"scientific_name": inferred_plant, "common_names": [inferred_plant], "score": 88.0}
+                            elif HAS_LOCAL_MODEL:
+                                status.write("PlantNet/Kindwise inconclusive. Invoking local neural mesh...")
+                                local_res = predict_image(frame, local_model, local_scaler)
+                                if local_res['confidence'] > 20: # Use local model if confidence is at least 20%
+                                    pn = {
+                                        "scientific_name": local_res['plant'],
+                                        "common_names": [local_res['plant']],
+                                        "score": local_res['confidence']
+                                    }
+                                    status.write(f"Identity resolved via Local Mesh: {local_res['plant']}")
+                                else:
+                                    status.write("Local confidence too low. Using deep-proxy diagnostics...")
+                                    pn = {"scientific_name": "Unknown Specimen", "common_names": ["Indeterminate Specimen"], "score": 0}
                             else:
                                 status.write("Unrecognised biological waveform. Using deep-proxy diagnostics...")
                                 pn = {"scientific_name": "Unknown Specimen", "common_names": ["Indeterminate Specimen"], "score": 0}
