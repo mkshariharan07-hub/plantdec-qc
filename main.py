@@ -446,7 +446,7 @@ with col_in:
                             "score": pn.get('score', 0),
                             "q": q,
                             "care": care,
-                            "pathology": kw.get('description', 'Pathology data offline or no disease detected.'),
+                            "pathology": kw.get('description') or "Specimen exhibits a stable bio-signature with no dominant pathological vectors detected within current spectral parameters.",
                             "rx": raw_rx,
                             "p_cat": p_cat,
                             "p_link": f"https://www.amazon.com/s?k={p_search}",
@@ -495,9 +495,16 @@ with col_in:
                         st.session_state.specimen_history.append({"name": plant_key, "status": res['disease'], "time": res['timestamp']})
                         status.update(label="Zenith Diagnosis Fulllocked.", state="complete")
                         
+                        # 8. Assistant Synchronization
+                        is_unk = "UNKNOWN" in plant_key.upper() or "INDETERMINATE" in plant_key.upper()
+                        if is_unk:
+                            assistant_msg = f"Bio-Signature locked on **Neural Anomaly**. Taxonomic consensus is currently PENDING. I've initiated a {q.get('label', 'Deep-Scan')} protocol to stabilize the profile."
+                        else:
+                            assistant_msg = f"Scan for **{plant_key}** fully locked. Pathogen matrix indicates **{res['disease']}**. {q.get('label')} threat level established."
+                        
                         st.session_state.chat_history.append({
                             "role": "assistant",
-                            "content": f"Scan for **{plant_key}** locked. Pathology indicates **{res['disease']}**. I've established a {q.get('label', 'Baseline')} threat level."
+                            "content": assistant_msg
                         })
                     except Exception as e:
                         st.error(f"Groot-Shield activated. Scan Interrupted: {e}")

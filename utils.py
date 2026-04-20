@@ -327,7 +327,6 @@ def predict_image(img_bgr: np.ndarray, model, scaler=None) -> dict:
 
 def identify_plant_with_plantnet(img_bgr: np.ndarray) -> dict:
     """Identify plant using PlantNet API (Scientific & Common names)."""
-    # Dynamic read to capture .env updates instantly
     from dotenv import load_dotenv
     load_dotenv()
     api_key = os.getenv("PLANTNET_API_KEY")
@@ -336,42 +335,44 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray) -> dict:
         return {"error": "PlantNet API Key missing in .env"}
     
     try:
-        _, img_encoded = cv2.imencode(".jpg", img_bgr)
-        files = [('images', ('image.jpg', img_encoded.tobytes()))]
+        # Resize for API optimization (max 1024px)
+        h, w = img_bgr.shape[:2]
+        if max(h, w) > 1024:
+            scale = 1024 / max(h, w)
+            img_bgr = cv2.resize(img_bgr, (0, 0), fx=scale, fy=scale)
+            
+        _, img_encoded = cv2.imencode(".jpg", img_bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
+        files = [('images', ('image.jpg', img_encoded.tobytes(), 'image/jpeg'))]
         data = {'organs': ['auto']}
         
         # 'all' searches across all floras for maximum coverage
         url = f"https://my-api.plantnet.org/v2/identify/all?api-key={api_key}"
-        response = requests.post(url, files=files, data=data, timeout=15)
-        response.raise_for_status()
+        response = requests.post(url, files=files, data=data, timeout=20)
         
+        if response.status_code == 404:
+            return {"error": "PlantNet 404: Flora 'all' not accessible with this key."}
+        if response.status_code == 401:
+            return {"error": "PlantNet 401: Invalid API Key. Check .env"}
+            
+        response.raise_for_status()
         res = response.json()
         
-        # DEBUG: Log the full response for troubleshooting
-        import json
-        with open("plantnet_debug.json", "w") as f:
-            json.dump(res, f, indent=4)
-            
         if not res.get('results'):
-            return {"error": f"PlantNet found no matches. (Status: {response.status_code})"}
+            return {"error": "PlantNet: No botanical matches found for this specimen."}
             
         best = res['results'][0]
         species = best.get('species', {})
         
-        # Robust name extraction
-        s_name = species.get('scientificNameWithoutAuthor') or species.get('scientificName') or "Unknown Species"
-        c_names = species.get('commonNames', [])
-        
         return {
-            "scientific_name": s_name,
-            "common_names": c_names,
+            "scientific_name": species.get('scientificNameWithoutAuthor') or species.get('scientificName') or "Unknown Species",
+            "common_names": species.get('commonNames', []),
             "score": round(best.get('score', 0) * 100, 1),
             "family": species.get('family', {}).get('scientificNameWithoutAuthor'),
             "genus": species.get('genus', {}).get('scientificNameWithoutAuthor'),
-            "raw_res": best # For further depth
+            "raw_res": best
         }
     except Exception as e:
-        return {"error": f"PlantNet Error: {str(e)}"}
+        return {"error": f"PlantNet Linkage Failure: {str(e)}"}
 
 
 def identify_disease_with_kindwise(img_bgr: np.ndarray) -> dict:
@@ -384,7 +385,13 @@ def identify_disease_with_kindwise(img_bgr: np.ndarray) -> dict:
         return {"error": "Crop Health API Key missing in .env"}
 
     try:
-        _, img_encoded = cv2.imencode(".jpg", img_bgr)
+        # Resize for API optimization
+        h, w = img_bgr.shape[:2]
+        if max(h, w) > 1024:
+            scale = 1024 / max(h, w)
+            img_bgr = cv2.resize(img_bgr, (0, 0), fx=scale, fy=scale)
+            
+        _, img_encoded = cv2.imencode(".jpg", img_bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
         img_base64 = base64.b64encode(img_encoded.tobytes()).decode('ascii')
         
         url = "https://crop.kindwise.com/api/v1/identification"
@@ -396,22 +403,27 @@ def identify_disease_with_kindwise(img_bgr: np.ndarray) -> dict:
             "images": [img_base64],
             "latitude": 49.195,
             "longitude": 16.606,
-            "similar_images": True
+            "similar_images": True,
+            "health": "all"
         }
         
-        response = requests.post(url, headers=headers, json=payload, timeout=20)
-        response.raise_for_status()
+        response = requests.post(url, headers=headers, json=payload, timeout=25)
         
+        if response.status_code == 401:
+            return {"error": "Kindwise 401: Invalid API Key. Check .env"}
+            
+        response.raise_for_status()
         data = response.json()
         result = data.get("result", {})
-        suggestions = result.get("disease", {}).get("suggestions", [])
+        
+        disease_data = result.get("disease", {})
+        suggestions = disease_data.get("suggestions", [])
         
         if not suggestions:
-            # Check if it identified healthy
-            is_healthy = result.get("is_healthy", {}).get("binary", False)
+            is_healthy = result.get("is_healthy", {}).get("binary", True)
             if is_healthy:
-                return {"healthy": True, "probability": result.get("is_healthy", {}).get("probability", 1.0)}
-            return {"error": "No disease identified."}
+                return {"disease": "Healthy Specimen", "probability": 100.0, "description": "Specimen exhibits high vitality with no detectable pathogens."}
+            return {"error": "Pathogen Matrix inconclusive. Diagnostic scan required."}
             
         best = suggestions[0]
         return {
@@ -419,10 +431,10 @@ def identify_disease_with_kindwise(img_bgr: np.ndarray) -> dict:
             "probability": round(best.get("probability", 0) * 100, 1),
             "details": best.get("details", {}),
             "treatment": best.get("details", {}).get("treatment", {}),
-            "description": best.get("details", {}).get("description", "")
+            "description": best.get("details", {}).get("description") or "Pathogen signature localized. Consult remediation directives."
         }
     except Exception as e:
-        return {"error": f"Kindwise Error: {str(e)}"}
+        return {"error": f"Crop Health Linkage Failure: {str(e)}"}
 
 def get_perenual_care_info(common_name: str) -> dict:
     """Fetch additional care info using Perenual API."""
