@@ -411,11 +411,11 @@ with col_in:
                         q = analyze_severity_quantum(frame, "Simulator Only" if q_eng == "Simulator Optimized" else "Dynamic")
                         
                         if "error" in pn:
-                            st.warning(f"Species identification failed: {pn['error']}")
+                            st.sidebar.error(f"📡 PL@NTNET: {pn['error']}")
                         if "error" in kw:
-                            st.warning(f"Pathogen analysis failed: {kw['error']}")
+                            st.sidebar.error(f"🩺 CROP.HEALTH: {kw['error']}")
 
-                        plant_key = pn.get('scientific_name') or pn.get('error') or 'Unknown Specimen'
+                        plant_key = pn.get('scientific_name') or 'Unknown Specimen'
                         status.write(f"Retrieving care protocols for {plant_key}...")
                         
                         # Fix potential IndexError
