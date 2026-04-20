@@ -328,6 +328,37 @@ with st.sidebar:
         st.caption("Uplink: STABLE")
         st.code(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Neural Mesh Sync\n[OK] Latency: 12ms\n[OK] Quantum Decryp.\n[MSG] Waveform locked.")
 
+    # Zenith Cloud Configuration Sidebar
+    st.sidebar.divider()
+    st.sidebar.markdown("<h3 style='color:#34d399;'>🔐 Zenith Cloud Interface</h3>", unsafe_allow_html=True)
+    
+    # Check all key status
+    keys = {
+        "PLANTNET": os.getenv("PLANTNET_API_KEY") or (st.secrets.get("PLANTNET_API_KEY") if "PLANTNET_API_KEY" in st.secrets else None),
+        "CROP_HEALTH": os.getenv("CROP_HEALTH_API_KEY") or (st.secrets.get("CROP_HEALTH_API_KEY") if "CROP_HEALTH_API_KEY" in st.secrets else None),
+        "PERENUAL": os.getenv("PERENUAL_API_KEY") or (st.secrets.get("PERENUAL_API_KEY") if "PERENUAL_API_KEY" in st.secrets else None),
+        "IBM_QUANTUM": os.getenv("IBM_QUANTUM_TOKEN") or (st.secrets.get("IBM_QUANTUM_TOKEN") if "IBM_QUANTUM_TOKEN" in st.secrets else None)
+    }
+    
+    for k, v in keys.items():
+        status_col, label_col = st.sidebar.columns([1, 4])
+        if v:
+            status_col.markdown("🟢")
+            label_col.caption(f"{k} Detected")
+        else:
+            status_col.markdown("🔴")
+            label_col.warning(f"{k} Missing")
+            
+    with st.sidebar.expander("🛠️ Manual Key Override"):
+        st.caption("Overrides .env / Secrets")
+        pk = st.text_input("New PlantNet Key", type="password", key="pk_over")
+        ck = st.text_input("New Kindwise Key", type="password", key="ck_over")
+        if st.button("ACTIVATE CLOUD OVERRIDE"):
+            if pk: os.environ["PLANTNET_API_KEY"] = pk
+            if ck: os.environ["CROP_HEALTH_API_KEY"] = ck
+            st.toast("Zenith Cloud Matrix Re-calibrated!", icon="⚡")
+            st.rerun()
+
 # ===============================
 # MAIN UI
 # ===============================
