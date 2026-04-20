@@ -344,6 +344,11 @@ with col_in:
                         status.write("Quantum state entanglement check...")
                         q = analyze_severity_quantum(frame, "Simulator Only" if q_eng == "Simulator Optimized" else "Dynamic")
                         
+                        if "error" in pn:
+                            st.warning(f"Species identification failed: {pn['error']}")
+                        if "error" in kw:
+                            st.warning(f"Pathogen analysis failed: {kw['error']}")
+
                         plant_key = pn.get('scientific_name', 'Unknown')
                         status.write(f"Retrieving care protocols for {plant_key}...")
                         
@@ -371,12 +376,12 @@ with col_in:
                             "score": pn.get('score', 0),
                             "q": q,
                             "care": care,
-                            "pathology": kw.get('description', 'Pathology data offline.'),
+                            "pathology": kw.get('description', 'Pathology data offline or no disease detected.'),
                             "rx": raw_rx,
                             "p_cat": p_cat,
                             "p_link": f"https://www.amazon.com/s?k={p_search}",
                             "timestamp": datetime.datetime.now().strftime("%H:%M:%S"),
-                            "ttf": random.randint(3, 14) if q.get('score', 3) > 2 else "Optimal",
+                            "ttf": q.get('ttf', random.randint(3, 14) if q.get('score', 3) > 2 else "Optimal"),
                             "carbon": round(random.uniform(0.5, 2.5), 2),
                             "dna": "".join(random.choice("ATCG") for _ in range(32)),
                             "roi": random.randint(150, 1200)
