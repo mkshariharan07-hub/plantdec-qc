@@ -188,6 +188,8 @@ if "specimen_history" not in st.session_state:
     st.session_state.specimen_history = []
 if "assistant_mode" not in st.session_state:
     st.session_state.assistant_mode = "Quantum Oracle"
+if "last_scan_id" not in st.session_state:
+    st.session_state.last_scan_id = None
 
 # ===============================
 # QUANTUM SEVERITY PROBABILISTIC
@@ -331,8 +333,14 @@ with col_in:
     if img_bytes:
         frame = decode_bytes_to_bgr(img_bytes)
         if frame is not None:
-            st.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), width="stretch")
-            if st.button("🚀 INITIATE ZENITH SCAN", width="stretch", type="primary"):
+            st.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), use_container_width=True)
+            
+            # AUTO-SCAN TRIGGER
+            scan_id = hash(img_bytes)
+            trigger_scan = st.button("🚀 RE-SCAN SPECIMEN", width="stretch", type="primary") or (st.session_state.last_scan_id != scan_id)
+            
+            if trigger_scan:
+                st.session_state.last_scan_id = scan_id
                 with st.status("Harmonizing neural and quantum vectors...", expanded=True) as status:
                     try:
                         status.write("Species ID phase initiated...")
@@ -436,7 +444,7 @@ with col_out:
         st.markdown(f"""
 <div class="zenith-card">
 <p class="metric-title">Critical Specimen</p>
-<h2 class="glow-text" style="font-size: 2.2rem; margin-bottom: 0.1rem;">{r.get('plant', 'Unknown').upper()}</h2>
+<h2 style="font-size: 2.2rem; margin-bottom: 0.1rem; color: #34d399; text-shadow: 0 0 25px rgba(16, 185, 129, 0.7); font-weight: 800;">{r.get('plant', 'Unknown').upper()}</h2>
 <p style="font-size:0.9rem; opacity:0.8; margin: 0 0 1.5rem 0; line-height: 1.5;">
 ID: {r.get('timestamp', 'NEW')}<br/>
 CO2 Credit: {r.get('carbon', 0)}kg/yr
