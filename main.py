@@ -274,6 +274,12 @@ with st.sidebar:
     st.image("https://img.icons8.com/bubbles/200/leaf.png", width=120)
     st.markdown("<h2 class='glow-text'>PLANTPULSE ZENITH</h2>", unsafe_allow_html=True)
     
+    # API KEY ORCHESTRATION
+    with st.expander("🔑 Credential Overrides", expanded=False):
+        pn_k = st.text_input("PlantNet API Key", value=os.getenv("PLANTNET_API_KEY") or "", type="password")
+        kw_k = st.text_input("Kindwise API Key", value=os.getenv("CROP_HEALTH_API_KEY") or "", type="password")
+        keys = {"PLANTNET": pn_k, "KINDWISE": kw_k}
+    
     with st.expander("🛠 Matrix Configuration", expanded=False):
         q_eng = st.selectbox("Quantum Engine", ["Dynamic (Hybrid)", "Simulator Optimized"])
         api_depth = st.slider("Discovery Depth", 1, 10, 7)
@@ -290,10 +296,7 @@ with st.sidebar:
         st.session_state.clear()
         st.rerun()
 
-    with st.expander("🔑 Credential Overrides", expanded=False):
-        pn_k = st.text_input("PlantNet API Key", value=os.getenv("PLANTNET_API_KEY") or "", type="password")
-        kw_k = st.text_input("Kindwise API Key", value=os.getenv("CROP_HEALTH_API_KEY") or "", type="password")
-        keys = {"PLANTNET": pn_k, "KINDWISE": kw_k}
+
 
     st.divider()
     st.markdown("### 🔍 System Diagnostics")
@@ -439,7 +442,7 @@ with col_in:
     if img_bytes:
         frame = decode_bytes_to_bgr(img_bytes)
         if frame is not None:
-            st.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), use_container_width=True)
+            st.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), width="stretch")
             
             # MD5-BASED STABLE SCAN TRACKER
             scan_id = hashlib.md5(img_bytes).hexdigest()
@@ -458,7 +461,7 @@ with col_in:
                     
                     try:
                         status.write("Phase 1: PlantNet Botanical Uplink...")
-                        pn = identify_plant_with_plantnet(frame, api_key=keys["PLANTNET"])
+                        pn = identify_plant_with_plantnet(frame, api_key=keys.get("PLANTNET"))
                         if "error" in pn:
                             status.write(f"⚠️ PlantNet: {pn['error']}")
                         else:
@@ -476,7 +479,7 @@ with col_in:
                         if is_weak or unstable:
                             status.write("PlantNet inconclusive. Scaling to Pathogen Path-Mining...")
                             # 1. Higher-Depth Pathogen Identification
-                            kw = identify_disease_with_kindwise(frame, api_key=keys["KINDWISE"])
+                            kw = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
                             disease_name = kw.get('disease', '').lower()
                             inferred_plant = None
                             
@@ -550,7 +553,7 @@ with col_in:
                         st.session_state.last_results['score'] = pn.get('score', 0)
                         
                         # 3. Pathogen Phase
-                        kw = identify_disease_with_kindwise(frame, api_key=keys["KINDWISE"])
+                        kw = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
                         st.session_state.last_results['disease'] = kw.get('disease', 'Healthy/Indeterminate')
                         
                         status.write("Quantum state entanglement check...")
