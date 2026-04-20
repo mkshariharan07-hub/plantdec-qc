@@ -289,6 +289,19 @@ with st.sidebar:
     st.markdown("### 🧬 Assistant Core")
     st.session_state.assistant_mode = st.selectbox("Personality Matrix", ["Quantum Oracle", "Bio-Scientist", "Farm Guardian"])
     
+    with st.expander("📡 Last Scan Diagnostics", expanded=True):
+        if st.session_state.get('last_results'):
+            lr = st.session_state.last_results
+            st.write(f"**Target:** {lr.get('plant')}")
+            st.write(f"**Confidence:** {lr.get('score', 0)}%")
+            st.write(f"**Timestamp:** {lr.get('timestamp')}")
+        else:
+            st.info("No scan data in session.")
+        
+        if st.button("Force Global Reset", use_container_width=True):
+            st.session_state.clear()
+            st.rerun()
+    
     st.divider()
     st.markdown("### 🛠 Development Core")
     
@@ -345,6 +358,9 @@ with col_in:
                     try:
                         status.write("Species ID phase initiated...")
                         pn = identify_plant_with_plantnet(frame)
+                        if not pn.get('results'):
+                            status.update(label="PlantNet 200 OK: No matches found for this specific specimen image. Try a clearer shot.", state="error")
+                            st.stop()
                         
                         status.write("Pathogen matrix synchronization...")
                         kw = identify_disease_with_kindwise(frame)
