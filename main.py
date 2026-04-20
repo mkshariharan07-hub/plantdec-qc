@@ -417,15 +417,17 @@ with col_in:
             # MD5-BASED STABLE SCAN TRACKER
             scan_id = hashlib.md5(img_bytes).hexdigest()
             manual_run = st.button("🚀 FORCE ZENITH ANALYSIS", width="stretch", type="primary")
-            results_stale = st.session_state.last_results.get('plant') == "UNKNOWN"
+            # FIX: Check for both 'UNKNOWN' and 'SCANNING...' to prevent deadlocks
+            current_plant = st.session_state.last_results.get('plant', 'UNKNOWN').upper()
+            results_stale = "UNKNOWN" in current_plant or "SCANNING" in current_plant or "INDETERMINATE" in current_plant
             id_mismatch = (st.session_state.get('last_scan_id') != scan_id)
             
             if manual_run or id_mismatch or (results_stale and img_bytes):
                 st.session_state.last_scan_id = scan_id
                 with st.status("Harmonizing neural and quantum vectors...", expanded=True) as status:
-                    # Immediately mark scan as 'started' with current timestamp to show progress
+                    # Mark 'started' with current timestamp, but don't overwrite the plant name 
+                    # with 'SCANNING' in session state to avoid it getting stuck on UI crashes.
                     st.session_state.last_results['timestamp'] = datetime.datetime.now().strftime("%H:%M:%S")
-                    st.session_state.last_results['plant'] = "SCANNING..."
                     
                     try:
                         status.write("Species ID phase initiated...")
@@ -579,8 +581,13 @@ with col_in:
                         assistant_msg = f"Bio-Signature for **{plant_key}** fully locked. Pathogen matrix indicates **{res['disease']}**."
                         st.session_state.chat_history.append({"role": "assistant", "content": assistant_msg})
                     except Exception as e:
+                        traceback.print_exc()
                         st.error(f"Groot-Shield activated. Scan Interrupted: {e}")
                         status.update(label="Hardware/API Desync Detected.", state="error")
+                        
+                        # Revert status from 'SCANNING' if it was set
+                        if st.session_state.last_results.get('plant') == "SCANNING...":
+                            st.session_state.last_results['plant'] = "UNKNOWN"
     st.markdown("</div>", unsafe_allow_html=True)
 
 with col_out:
