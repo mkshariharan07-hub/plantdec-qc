@@ -697,7 +697,7 @@ CO2 Credit: {r.get('carbon', 0)}kg/yr
                     pdf.cell(0, 8, f"Circuit Depth: {q.get('depth')}", ln=True)
                     pdf.cell(0, 8, f"Entanglement Index: {int(q.get('entanglement',0)*100)}%", ln=True)
                     
-                    pdf_output = pdf.output()
+                    pdf_output = bytes(pdf.output())
                     st.download_button(
                         label="⬇️ Download Final Dossier",
                         data=pdf_output,
