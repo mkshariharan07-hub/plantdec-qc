@@ -277,7 +277,8 @@ with st.sidebar:
     with st.expander("🛠 Matrix Configuration", expanded=False):
         q_eng = st.selectbox("Quantum Engine", ["Dynamic (Hybrid)", "Simulator Optimized"])
         api_depth = st.slider("Discovery Depth", 1, 10, 7)
-        hard_guess = st.toggle("Hard-Guess Mode", value=True, help="Bypass confidence gates to force a result")
+        hard_guess = st.toggle("Hard-Guess Mode", value=True)
+        ssl_verify = st.toggle("Verify SSL Certificates", value=False, help="Disable if encountering SSL/Proxy errors on Windows")
     
     st.divider()
     st.markdown("### Clinical Status")
@@ -456,8 +457,12 @@ with col_in:
                     st.session_state.last_results['timestamp'] = datetime.datetime.now().strftime("%H:%M:%S")
                     
                     try:
-                        status.write("Species ID phase initiated...")
+                        status.write("Phase 1: PlantNet Botanical Uplink...")
                         pn = identify_plant_with_plantnet(frame, api_key=keys["PLANTNET"])
+                        if "error" in pn:
+                            status.write(f"⚠️ PlantNet: {pn['error']}")
+                        else:
+                            status.write(f"✅ PlantNet: {pn.get('scientific_name')} ({pn.get('score')}% confidence)")
                         
                         # LOG FOR DEEP-DEBUG
                         with open("api_log.txt", "a") as f:

@@ -351,7 +351,8 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray, api_key: str = None) -> di
         for project in ["all", "weurope"]:
             url = f"https://my-api.plantnet.org/v2/identify/{project}?api-key={api_key}"
             try:
-                response = requests.post(url, files=files, data=data, timeout=30)
+                # SSL Verification bypass for Windows environment compatibility
+                response = requests.post(url, files=files, data=data, timeout=30, verify=False)
                 if response.status_code == 200:
                     res = response.json()
                     if res.get('results'):
@@ -410,7 +411,8 @@ def identify_disease_with_kindwise(img_bgr: np.ndarray, api_key: str = None) -> 
             "health": "all"
         }
         
-        response = requests.post(url, headers=headers, json=payload, timeout=25)
+        # SSL Verification bypass for Windows environment compatibility
+        response = requests.post(url, headers=headers, json=payload, timeout=25, verify=False)
         
         if response.status_code != 200:
             return {"error": f"Kindwise Gateway Rejected (HTTP {response.status_code}): {response.text[:100]}"}
