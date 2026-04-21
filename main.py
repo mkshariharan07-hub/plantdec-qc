@@ -555,23 +555,6 @@ with col_in:
                             if inferred_plant:
                                 status.write(f"Identity recovered via Bio-Signature: {inferred_plant}")
                                 pn = {"scientific_name": inferred_plant, "common_names": [inferred_plant], "score": 88.0}
-                            elif HAS_LOCAL_MODEL:
-                                status.write("PlantNet/Kindwise inconclusive. Invoking local neural mesh...")
-                                try:
-                                    local_res = predict_image(frame, local_model, local_scaler)
-                                    if local_res['confidence'] > (5 if hard_guess else 35): # Safer threshold to avoid false local positives
-                                        pn = {
-                                            "scientific_name": local_res['plant'],
-                                            "common_names": [local_res['plant']],
-                                            "score": local_res['confidence']
-                                        }
-                                        status.write(f"Identity resolved via Local Mesh: {local_res['plant']}")
-                                    else:
-                                        status.write("Local confidence too low. Using deep-proxy diagnostics...")
-                                        pn = {"scientific_name": "Unknown Specimen", "common_names": ["Indeterminate Specimen"], "score": 0}
-                                except Exception as model_err:
-                                    status.write(f"Local Mesh failure: {model_err}")
-                                    pn = {"scientific_name": "Unknown Specimen", "common_names": ["Indeterminate Specimen"], "score": 0}
                             else:
                                 status.write("Unrecognised biological waveform. Using deep-proxy diagnostics...")
                                 pn = {"scientific_name": "Unknown Specimen", "common_names": ["Indeterminate Specimen"], "score": 0}
