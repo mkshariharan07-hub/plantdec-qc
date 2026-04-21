@@ -325,7 +325,7 @@ def predict_image(img_bgr: np.ndarray, model, scaler=None) -> dict:
 # EXTERNAL API CONNECTORS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def identify_plant_with_plantnet(img_bgr: np.ndarray, api_key: str = None) -> dict:
+def identify_plant_with_plantnet(img_bgr: np.ndarray, api_key: str = None, verify_ssl: bool = False) -> dict:
     """Identify plant using PlantNet API with adaptive flora fallback."""
     if not api_key:
         from dotenv import load_dotenv
@@ -344,7 +344,7 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray, api_key: str = None) -> di
             
         _, img_encoded = cv2.imencode(".jpg", img_bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
         files = [('images', ('image.jpg', img_encoded.tobytes(), 'image/jpeg'))]
-        data = {'organs': ['auto']}
+        data = {'organs': 'auto'}
         
         # Strategy: Try 'all' first, fallback to 'weurope' if rejected
         last_raw = "None"
@@ -352,19 +352,27 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray, api_key: str = None) -> di
             url = f"https://my-api.plantnet.org/v2/identify/{project}?api-key={api_key}"
             for attempt in range(2): # Retry once for transient failures
                 try:
-                    # SSL Verification bypass for Windows environment compatibility
+                    # SSL Verification based on parameter (default False for Windows compatibility)
                     # Increased timeout to 60s for slow uplinks
-                    response = requests.post(url, files=files, data=data, timeout=60, verify=False)
+                    response = requests.post(url, files=files, data=data, timeout=60, verify=verify_ssl)
                     if response.status_code == 200:
                         res = response.json()
                         if res.get('results'):
                             best = res['results'][0]
                             score = round(best.get('score', 0) * 100, 1)
                             species = best.get('species', {})
+                            common_names = species.get('commonNames', [])
                             
+                            # Refined naming logic
+                            s_name = species.get('scientificNameWithoutAuthor') or species.get('scientificName')
+                            if not s_name:
+                                # Fallback to genus/family if species name is missing
+                                genus = species.get('genus', {}).get('scientificNameWithoutAuthor') 
+                                s_name = f"{genus} sp." if genus else "Unknown Species"
+
                             return {
-                                "scientific_name": species.get('scientificNameWithoutAuthor') or species.get('scientificName') or "Unknown Species",
-                                "common_names": species.get('commonNames', []),
+                                "scientific_name": s_name,
+                                "common_names": common_names,
                                 "score": score,
                                 "family": species.get('family', {}).get('scientificNameWithoutAuthor'),
                                 "genus": species.get('genus', {}).get('scientificNameWithoutAuthor'),

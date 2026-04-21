@@ -180,7 +180,8 @@ if "chat_history" not in st.session_state:
 if "last_results" not in st.session_state or st.session_state.last_results is None:
     st.session_state.last_results = {
         "plant": "UNKNOWN",
-        "timestamp": "12:56:39",
+        "common_name": "UNKNOWN",
+        "timestamp": datetime.datetime.now().strftime("%H:%M:%S"),
         "carbon": 1.12,
         "ttf": "Optimal",
         "disease": "Healthy/Indeterminate",
@@ -276,8 +277,9 @@ with st.sidebar:
     
     # API KEY ORCHESTRATION
     with st.expander("🔑 Credential Overrides", expanded=False):
-        pn_k = st.text_input("PlantNet API Key", value=os.getenv("PLANTNET_API_KEY") or "", type="password")
-        kw_k = st.text_input("Kindwise API Key", value=os.getenv("CROP_HEALTH_API_KEY") or "", type="password")
+        pn_k = st.text_input("PlantNet API Key", value=os.getenv("PLANTNET_API_KEY") or "", type="password", key="pn_key_input")
+        kw_k = st.text_input("Kindwise API Key", value=os.getenv("CROP_HEALTH_API_KEY") or "", type="password", key="kw_key_input")
+        # Initialize keys dict with current widget values
         keys = {"PLANTNET": pn_k, "KINDWISE": kw_k}
     
     with st.expander("🛠 Matrix Configuration", expanded=False):
@@ -361,9 +363,10 @@ with st.sidebar:
     st.sidebar.markdown("<h3 style='color:#34d399;'>🔐 Zenith Cloud Interface</h3>", unsafe_allow_html=True)
     
     # Check all key status
+    # Check all key status - prioritized: Widget > Env > Secret
     keys = {
-        "PLANTNET": os.getenv("PLANTNET_API_KEY") or (st.secrets.get("PLANTNET_API_KEY") if "PLANTNET_API_KEY" in st.secrets else None),
-        "CROP_HEALTH": os.getenv("CROP_HEALTH_API_KEY") or (st.secrets.get("CROP_HEALTH_API_KEY") if "CROP_HEALTH_API_KEY" in st.secrets else None),
+        "PLANTNET": pn_k or os.getenv("PLANTNET_API_KEY") or (st.secrets.get("PLANTNET_API_KEY") if "PLANTNET_API_KEY" in st.secrets else None),
+        "KINDWISE": kw_k or os.getenv("CROP_HEALTH_API_KEY") or (st.secrets.get("CROP_HEALTH_API_KEY") if "CROP_HEALTH_API_KEY" in st.secrets else None),
         "PERENUAL": os.getenv("PERENUAL_API_KEY") or (st.secrets.get("PERENUAL_API_KEY") if "PERENUAL_API_KEY" in st.secrets else None),
         "IBM_QUANTUM": os.getenv("IBM_QUANTUM_TOKEN") or (st.secrets.get("IBM_QUANTUM_TOKEN") if "IBM_QUANTUM_TOKEN" in st.secrets else None)
     }
@@ -461,11 +464,14 @@ with col_in:
                     
                     try:
                         status.write("Phase 1: PlantNet Botanical Uplink...")
-                        pn = identify_plant_with_plantnet(frame, api_key=keys.get("PLANTNET"))
+                        pn = identify_plant_with_plantnet(frame, api_key=keys.get("PLANTNET"), verify_ssl=ssl_verify)
+                        
                         if "error" in pn:
                             status.write(f"⚠️ PlantNet: {pn['error']}")
+                            # If no key, maybe Kindwise or Local Mesh can help
                         else:
-                            status.write(f"✅ PlantNet: {pn.get('scientific_name')} ({pn.get('score')}% confidence)")
+                            common_name = pn.get('common_names')[0] if pn.get('common_names') else pn.get('scientific_name')
+                            status.write(f"✅ PlantNet: {common_name} ({pn.get('score')}% confidence)")
                         
                         # LOG FOR DEEP-DEBUG
                         with open("api_log.txt", "a") as f:
@@ -672,8 +678,9 @@ with col_out:
 <div class="zenith-card">
 <p class="metric-title">{'Neural Mesh Sync' if is_unknown else 'Critical Specimen'}</p>
 <h2 style="font-size: 1.8rem; margin-bottom: 0.1rem; color: #34d399; text-shadow: 0 0 25px rgba(16, 185, 129, 0.7); font-weight: 800; letter-spacing: 1px;">
-    {p_name if not is_unknown else "AWAITING NEURAL CONSENSUS"}
+    {r.get('common_name', p_name).upper() if not is_unknown else "AWAITING NEURAL CONSENSUS"}
 </h2>
+{f'<p style="color:#6ee7b7; font-size:0.8rem; font-style:italic; margin-top:-5px;">{p_name}</p>' if not is_unknown and r.get('common_name') and r.get('common_name').upper() != p_name else ""}
 <p style="font-size:0.9rem; opacity:0.8; margin: 0 0 1.5rem 0; line-height: 1.5;">
 ID: {r.get('timestamp', 'NEW')} | Uplink: STABLE<br/>
 CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon', 0)}kg/yr</span>
