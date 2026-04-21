@@ -14,6 +14,11 @@ RULE: Any change to extract_features() is made HERE only.
 import cv2
 import numpy as np
 import os
+os.environ['http_proxy'] = ''
+os.environ['https_proxy'] = ''
+os.environ['HTTP_PROXY'] = ''
+os.environ['HTTPS_PROXY'] = ''
+
 import requests
 import base64
 from typing import Optional

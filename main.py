@@ -9,6 +9,12 @@ import streamlit as st
 import cv2
 import numpy as np
 import os
+# Force disable proxies to prevent zombie Windows proxy settings from causing timeouts on hotspots
+os.environ['http_proxy'] = ''
+os.environ['https_proxy'] = ''
+os.environ['HTTP_PROXY'] = ''
+os.environ['HTTPS_PROXY'] = ''
+
 import json
 import datetime
 import base64
@@ -481,6 +487,7 @@ with col_in:
                         # 100% Cloud-Based Identification Pipeline (Zenith Synapse-V)
                         is_weak = "error" in pn or not pn.get('scientific_name') or pn.get('scientific_name').upper() in ["UNKNOWN SPECIMEN", "UNKNOWN SPECIES", "UNKNOWN"]
                         unstable = pn.get('score', 0) < 15.0 and not hard_guess
+                        inferred_plant = None
 
                         if is_weak or unstable:
                             status.write("PlantNet inconclusive. Scaling to Pathogen Path-Mining...")
