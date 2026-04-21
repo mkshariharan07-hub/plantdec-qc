@@ -488,16 +488,19 @@ with col_in:
                             kw = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
                             disease_main = kw.get('disease', '')
                             
-                            # Try to extract host from disease name if PlantNet failed
-                            found_host = None
-                            for host in ["Tomato", "Apple", "Potato", "Banana", "Corn", "Rice", "Wheat", "Grape", "Orange", "Pepper", "Coffee", "Mango"]:
-                                if host.lower() in disease_main.lower():
-                                    found_host = host
-                                    break
+                            # Retrieve host directly from Kindwise Crop API, or fallback to disease name parsing
+                            found_host = kw.get('plant')
+                            if not found_host:
+                                for host in ["Tomato", "Apple", "Potato", "Banana", "Corn", "Rice", "Wheat", "Grape", "Orange", "Pepper", "Coffee", "Mango"]:
+                                    if host.lower() in disease_main.lower():
+                                        found_host = host
+                                        break
                             
                             if found_host:
-                                status.write(f"Identity recovered via Pathogen Signature: {found_host}")
+                                status.write(f"Identity recovered via Health Engine: {found_host}")
                                 pn = {"scientific_name": found_host, "common_names": [found_host], "score": 90.0}
+                            elif "timeout" in pn.get('error', '').lower() or "timeout" in kw.get('error', '').lower():
+                                status.write("⚠️ WARNING: Cloud Botanical APIs timed out. Check network proxy/firewall.")
                             
                             disease_name = kw.get('disease', '').lower()
                             inferred_plant = None

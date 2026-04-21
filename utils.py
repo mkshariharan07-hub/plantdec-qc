@@ -353,8 +353,8 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray, api_key: str = None, verif
             for attempt in range(2): # Retry once for transient failures
                 try:
                     # SSL Verification based on parameter (default False for Windows compatibility)
-                    # Increased timeout to 60s for slow uplinks
-                    response = requests.post(url, files=files, data=data, timeout=60, verify=verify_ssl)
+                    # Decreased timeout to 15s to prevent massive UI freezes when blocked
+                    response = requests.post(url, files=files, data=data, timeout=15, verify=verify_ssl)
                     if response.status_code == 200:
                         res = response.json()
                         if res.get('results'):
@@ -439,15 +439,20 @@ def identify_disease_with_kindwise(img_bgr: np.ndarray, api_key: str = None) -> 
         disease_data = result.get("disease", {})
         suggestions = disease_data.get("suggestions", [])
         
+        crop_data = result.get("crop", {})
+        crop_suggs = crop_data.get("suggestions", [])
+        crop_name = crop_suggs[0].get("name") if crop_suggs else None
+        
         if not suggestions:
             is_healthy = result.get("is_healthy", {}).get("binary", True)
             if is_healthy:
-                return {"disease": "Healthy Specimen", "probability": 100.0, "description": "Specimen exhibits high vitality with no detectable pathogens."}
-            return {"error": "Pathogen Matrix inconclusive. Diagnostic scan required."}
+                return {"disease": "Healthy Specimen", "plant": crop_name, "probability": 100.0, "description": "Specimen exhibits high vitality with no detectable pathogens."}
+            return {"error": "Pathogen Matrix inconclusive. Diagnostic scan required.", "plant": crop_name}
             
         best = suggestions[0]
         return {
             "disease": best.get("name"),
+            "plant": crop_name,
             "probability": round(best.get("probability", 0) * 100, 1),
             "details": best.get("details", {}),
             "treatment": best.get("details", {}).get("treatment", {}),
