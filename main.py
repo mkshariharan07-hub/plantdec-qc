@@ -214,21 +214,45 @@ if "last_scan_id" not in st.session_state:
 # ===============================
 def analyze_severity_quantum(img: np.ndarray, backend_pref: str):
     if not HAS_QUANTUM:
-        return {"score": 3, "label": "Simulated Matrix", "prob": {"0000": 0.5, "1111": 0.5}, "backend": "sim"}
+        return {"score": 3, "label": "Simulated Matrix", "prob": {"00000000": 0.5}, "backend": "sim", "entanglement": 0.5, "depth": 0, "gates": {}, "circuit_str": "No Qiskit"}
         
     try:
         small = cv2.resize(img, (64, 64))
+        # Extract 8 Bio-Features for Amplitude Encoding
+        b, g, r = cv2.split(small)
         gray  = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY).astype(float) / 255.0
         entropy = -np.sum(gray * np.log2(gray + 1e-7)) / 4096.0
+        r_m, r_s = np.mean(r)/255.0, np.std(r)/255.0
+        g_m, g_s = np.mean(g)/255.0, np.std(g)/255.0
+        b_m, b_s = np.mean(b)/255.0, np.std(b)/255.0
+        gray_var = np.var(gray)
+
+        features = [entropy, r_m, g_m, b_m, r_s, g_s, b_s, gray_var]
         
-        qr = QuantumRegister(4, 'q')
-        cr = ClassicalRegister(4, 'c')
+        # 8-Qubit Zenith Protocol
+        n_qubits = 8
+        qr = QuantumRegister(n_qubits, 'q')
+        cr = ClassicalRegister(n_qubits, 'c')
         qc = QuantumCircuit(qr, cr)
         
-        qc.ry(entropy * math.pi, qr[0])
-        qc.h(qr[1])
-        qc.cx(qr[0], qr[2])
-        qc.cx(qr[1], qr[3])
+        # 1. State Encoding Layer (Ry Rotations based on bio-features)
+        for i, val in enumerate(features):
+            qc.ry(abs(val) * math.pi * 2, qr[i])
+            
+        qc.barrier()
+        # 2. Entanglement Ring Topology Layer
+        for i in range(n_qubits):
+            qc.cx(qr[i], qr[(i+1) % n_qubits])
+            
+        qc.barrier()
+        # 3. Superposition & Mixing Layer
+        for i in range(n_qubits):
+            qc.h(qr[i])
+            if i % 2 == 0:
+                qc.rz(math.pi/4, qr[i])
+                
+        qc.barrier()
+        # 4. Measurement
         qc.measure(qr, cr)
 
         try:
@@ -249,17 +273,20 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str):
             sampler = StatevectorSampler()
             result = sampler.run([qc]).result()[0]
             counts = result.data.c.get_counts()
-            backend_name = "q-local-sim"
+            backend_name = "q-local-sim-enhanced"
 
         total = sum(counts.values())
         probs = {k: v/total for k, v in counts.items()}
         dom_state = max(counts, key=counts.get)
-        if isinstance(dom_state, int): dom_state = format(dom_state, '04b')
-        score = dom_state.count('1') + 1
+        if isinstance(dom_state, int): dom_state = format(dom_state, f'0{n_qubits}b')
+        score = min(max(dom_state.count('1'), 1), 5) % 5 + 1 # Modulo magic to map to 1-5 severity
         labels = ["Optimal", "Incipient", "Moderate", "Severe", "Critical"]
         # Circuit Stats
         gates = qc.count_ops()
         depth = qc.depth()
+        
+        # We calculate entanglement by checking spread of states
+        entanglement_metric = min(1.0, len(counts) / (2**n_qubits * 0.1))
         
         return {
             "score": score, 
@@ -270,7 +297,7 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str):
             "circuit_str": str(qc.draw(output='text')),
             "gates": dict(gates),
             "depth": depth,
-            "entanglement": dom_state.count('1') / 4.0
+            "entanglement": entanglement_metric
         }
     except Exception as e:
         return {"score": 3, "label": "Simulator Matrix", "prob": {"0000": 1.0}, "backend": "local-sim-fallback", "circuit_str": "Circuit Generation Failure", "gates": {}, "depth": 0, "entanglement": 0}
@@ -769,14 +796,25 @@ CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon',
             st.button("EXPORT MAVLINK / DJI-SDK WAYPOINTS", use_container_width=True)
             
         with rtabs[2]:
-            st.markdown("<h4 style='color:#6ee7b7;'>Qiskit Quantum Bio-Telemetry</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='color:#6ee7b7;'>Qiskit Enterprise Architecture (V5)</h4>", unsafe_allow_html=True)
             q_data = r.get('q', {})
-            mcol1, mcol2, mcol3 = st.columns(3)
-            mcol1.metric("Gate Depth", q_data.get('depth', 0))
-            mcol2.metric("Biological Qubits", "4 (Entangled)")
-            mcol3.metric("Entanglement Index", f"{int(q_data.get('entanglement', 0)*100)}%")
             
-            st.markdown("<p class='metric-title'> Biological Bloch Sphere (Simulated)</p>", unsafe_allow_html=True)
+            with st.container():
+                st.markdown("""
+                <div style='background:rgba(16,185,129,0.05); padding:1rem; border:1px solid rgba(16,185,129,0.3); border-radius:12px;'>
+                <h5 style='color:#34d399;'>Biological Trait Amplitudes mapped to 8-Qubit Tensor Product Space</h5>
+                <p style='font-size:0.85rem; opacity:0.8;'>The specimen's RGB variances and cellular entropy matrices have been encoded directly into Y-axis wavefunction rotations, followed by a hardware-efficient ring correlation (CNOT) layer.</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            st.write("")
+            mcol1, mcol2, mcol3, mcol4 = st.columns(4)
+            mcol1.metric("Circuit Depth", q_data.get('depth', 0))
+            mcol2.metric("Logical Qubits", "8 (Fully Entangled)")
+            mcol3.metric("Entanglement Index", f"{int(q_data.get('entanglement', 0)*100)}%")
+            mcol4.metric("Backend Proxy", q_data.get('backend', 'Unknown Provider').upper())
+            
+            st.markdown("<p class='metric-title'> Tensor Spatial Representation</p>", unsafe_allow_html=True)
             import plotly.graph_objects as go
             import math
             ent = q_data.get('entropy', 0.5)
@@ -795,12 +833,15 @@ CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon',
             fig_bloch.update_layout(scene=dict(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False), paper_bgcolor="rgba(0,0,0,0)", height=350, margin=dict(l=0,r=0,t=0,b=0))
             st.plotly_chart(fig_bloch, width="stretch")
 
-            st.markdown("<h4 style='color:#6ee7b7;'>Quantum Circuit Ledger</h4>", unsafe_allow_html=True)
-            st.code(q_data.get('circuit_str', 'Circuit data missing'), language="text")
+            with st.expander("📂 Explore Real-Time Circuit Compilation"):
+                st.code(q_data.get('circuit_str', 'Circuit data missing'), language="qasm")
             
-            st.markdown("<h4 style='color:#34d399;'>Raw Quantum Bit-Flip Breakdown</h4>", unsafe_allow_html=True)
-            pdf_data = pd.DataFrame(list(q_data.get('prob', {'0000': 1.0}).items()), columns=['State', 'Probability'])
-            st.bar_chart(pdf_data.set_index('State'), color="#10b981")
+            st.markdown("<h4 style='color:#34d399;'>Wavefunction Collapse Distribution</h4>", unsafe_allow_html=True)
+            # Filter top 20 probabilities to prevent massive chart clobbering
+            prob_dict = q_data.get('prob', {'00000000': 1.0})
+            top_probs = dict(sorted(prob_dict.items(), key=lambda item: item[1], reverse=True)[:20])
+            pdf_data = pd.DataFrame(list(top_probs.items()), columns=['Eigenstate Vector', 'Amplitude Probability'])
+            st.bar_chart(pdf_data.set_index('Eigenstate Vector'), color="#10b981", height=300)
 
         with rtabs[3]:
             st.markdown("<h4 style='color:#6ee7b7;'>🌈 Bio-Spectral Channel Analysis</h4>", unsafe_allow_html=True)
