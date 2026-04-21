@@ -384,6 +384,10 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray, api_key: str = None, verif
                 except Exception as e:
                     last_raw = f"Link Failure: {str(e)}"
                     if attempt == 0: continue # Retry on first failure
+            
+            # If we reached here, this project failed or had no results
+            if last_raw == "None":
+                last_raw = "No matches found for this specimen."
                     
         return {"error": f"PlantNet: {last_raw}"}
     except Exception as e:

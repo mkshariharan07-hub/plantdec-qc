@@ -486,6 +486,19 @@ with col_in:
                             status.write("PlantNet inconclusive. Scaling to Pathogen Path-Mining...")
                             # 1. Higher-Depth Pathogen Identification
                             kw = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
+                            disease_main = kw.get('disease', '')
+                            
+                            # Try to extract host from disease name if PlantNet failed
+                            found_host = None
+                            for host in ["Tomato", "Apple", "Potato", "Banana", "Corn", "Rice", "Wheat", "Grape", "Orange", "Pepper", "Coffee", "Mango"]:
+                                if host.lower() in disease_main.lower():
+                                    found_host = host
+                                    break
+                            
+                            if found_host:
+                                status.write(f"Identity recovered via Pathogen Signature: {found_host}")
+                                pn = {"scientific_name": found_host, "common_names": [found_host], "score": 90.0}
+                            
                             disease_name = kw.get('disease', '').lower()
                             inferred_plant = None
                             
@@ -661,9 +674,9 @@ with col_out:
 <div class="zenith-card">
 <p class="metric-title">{'Neural Mesh Sync' if is_unknown else 'Critical Specimen'}</p>
 <h2 style="font-size: 1.8rem; margin-bottom: 0.1rem; color: #34d399; text-shadow: 0 0 25px rgba(16, 185, 129, 0.7); font-weight: 800; letter-spacing: 1px;">
-    {r.get('common_name', p_name).upper() if not is_unknown else "AWAITING NEURAL CONSENSUS"}
+    {r.get('common_name', p_name).upper() if not is_unknown else "INDETERMINATE SPECIMEN"}
 </h2>
-{f'<p style="color:#6ee7b7; font-size:0.8rem; font-style:italic; margin-top:-5px;">{p_name}</p>' if not is_unknown and r.get('common_name') and r.get('common_name').upper() != p_name else ""}
+{f'<p style="color:#6ee7b7; font-size:0.8rem; font-style:italic; margin-top:-5px;">{p_name}</p>' if not is_unknown and r.get('common_name') and r.get('common_name').upper() != p_name else "<p style='color:#f87171; font-size:0.8rem; font-style:italic; margin-top:-5px;'>Bio-Signature Unrecognized</p>" if is_unknown else ""}
 <p style="font-size:0.9rem; opacity:0.8; margin: 0 0 1.5rem 0; line-height: 1.5;">
 ID: {r.get('timestamp', 'NEW')} | Uplink: STABLE<br/>
 CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon', 0)}kg/yr</span>
