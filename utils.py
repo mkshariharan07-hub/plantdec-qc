@@ -32,9 +32,10 @@ CROP_HEALTH_API_KEY = os.getenv("CROP_HEALTH_API_KEY")
 PERENUAL_API_KEY = os.getenv("PERENUAL_API_KEY")
 
 # ── Artifact paths (one place to change if you move files) ────────────────────
-MODEL_PATH  = "plant_model.pkl"
-SCALER_PATH = "plant_scaler.pkl"
-REPORT_PATH = "training_report.txt"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH  = os.path.join(BASE_DIR, "plant_model.pkl")
+SCALER_PATH = os.path.join(BASE_DIR, "plant_scaler.pkl")
+REPORT_PATH = os.path.join(BASE_DIR, "training_report.txt")
 IMG_SIZE    = (128, 128)
 
 # Feature-space identifiers

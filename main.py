@@ -6,6 +6,17 @@ Pure Cloud + Quantum Entanglement Logic
 """
 
 import streamlit as st
+
+# ===============================
+# PAGE CONFIG
+# ===============================
+st.set_page_config(
+    page_title="PlantPulse Zenith",
+    page_icon="🌿",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 import cv2
 import numpy as np
 import os
@@ -58,16 +69,6 @@ try:
 except Exception as e:
     HAS_LOCAL_MODEL = False
     print(f"Local Model Load Failed: {e}")
-
-# ===============================
-# PAGE CONFIG
-# ===============================
-st.set_page_config(
-    page_title="PlantPulse Zenith",
-    page_icon="🌿",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 # ===============================
 # STYLING (Zenith Design System)
@@ -480,7 +481,8 @@ with col_in:
                             status.write(f"✅ PlantNet: {common_name} ({pn.get('score')}% confidence)")
                         
                         # LOG FOR DEEP-DEBUG
-                        with open("api_log.txt", "a") as f:
+                        log_path = os.path.join(os.path.dirname(__file__), "api_log.txt")
+                        with open(log_path, "a") as f:
                             f.write(f"--- SCAN AT {datetime.datetime.now()} ---\n")
                             f.write(f"PlantNet Outcome: {pn}\n")
                         
