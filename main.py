@@ -616,7 +616,8 @@ with col_in:
                                 "Neem": ["neem", "azadirachta"],
                                 "Aloe Vera": ["aloe"],
                                 "Jackfruit": ["jackfruit", "artocarpus"],
-                                "Durian": ["durian", "durio"]
+                                "Durian": ["durian", "durio"],
+                                "Dogwood": ["dogwood", "cornus"]
                             }
                             
                             # Search both name and description for host keywords

@@ -231,6 +231,18 @@ DISEASE_INFO: dict[str, dict] = {
         "emoji":    "🔴",
         "tips":     "Remove infected plants. Use reflective mulches to deter whiteflies.",
     },
+    "septoria_leaf_spot": {
+        "severity": "medium",
+        "color":    "#f97316",
+        "emoji":    "🟠",
+        "tips":     "Remove spotted leaves. Improve air circulation. Apply copper-based fungicide in early spring.",
+    },
+    "anthracnose": {
+        "severity": "high",
+        "color":    "#ef4444",
+        "emoji":    "🔴",
+        "tips":     "Prune out dead twigs. Apply fungicide (chlorothalonil) during bud break. Rake fallen leaves.",
+    },
 }
 
 _FALLBACK_INFO = {
@@ -455,7 +467,14 @@ def identify_disease_with_kindwise(img_bgr: np.ndarray, api_key: str = None) -> 
                 return {"disease": "Healthy Specimen", "plant": crop_name, "probability": 100.0, "description": "Specimen exhibits high vitality with no detectable pathogens."}
             return {"error": "Pathogen Matrix inconclusive. Diagnostic scan required.", "plant": crop_name}
             
+        # Pathogen-First Logic: If 'Healthy' is suggested but other pathogens are present,
+        # prefer the pathogen if it has >15% probability.
         best = suggestions[0]
+        if best.get('name', '').lower() == "healthy" and len(suggestions) > 1:
+            alt = suggestions[1]
+            if alt.get('probability', 0) > 0.15:
+                best = alt
+
         return {
             "disease": best.get("name"),
             "plant": crop_name,
