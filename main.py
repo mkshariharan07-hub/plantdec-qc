@@ -212,7 +212,7 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
         
     try:
         small = cv2.resize(img, (64, 64))
-        # Extract 8 Bio-Features for Amplitude Encoding
+        hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV)
         b, g, r = cv2.split(small)
         gray  = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
         gray_f = gray.astype(float) / 255.0
@@ -223,17 +223,23 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
         # FEATURE 2-4: Color Means
         r_m, g_m, b_m = np.mean(r)/255.0, np.mean(g)/255.0, np.mean(b)/255.0
         
-        # FEATURE 5-6: Color Variations
-        r_s, g_s = np.std(r)/255.0, np.std(g)/255.0
+        # FEATURE 5: Pathogenic Spot Detection (Laplacian)
+        lap_var = cv2.Laplacian(gray, cv2.CV_64F).var() / 250.0 # Increased sensitivity
         
-        # FEATURE 7: Pathogenic Spot Detection (Laplacian Variance)
-        # High variance in Laplacian indicates sharp edges/spots (lesions)
-        lap_var = cv2.Laplacian(gray, cv2.CV_64F).var() / 500.0
+        # FEATURE 6: Necrosis Detection (Brown/Black Lesion ratio)
+        lower_brown = np.array([10, 20, 20])
+        upper_brown = np.array([30, 255, 150])
+        brown_mask = cv2.inRange(hsv, lower_brown, upper_brown)
+        necrosis_ratio = np.sum(brown_mask > 0) / (64*64)
         
-        # FEATURE 8: Morphological Irregularity
-        gray_var = np.var(gray_f) * 10.0
+        # FEATURE 7: Texture noise
+        std_dev = np.std(gray_f) * 5.0
+        
+        # FEATURE 8: Green Loss (Chlorosis)
+        green_mask = cv2.inRange(hsv, np.array([35, 20, 20]), np.array([85, 255, 255]))
+        chlorosis_factor = 1.0 - (np.sum(green_mask > 0) / (64*64))
 
-        features = [entropy, r_m, g_m, b_m, r_s, g_s, lap_var, gray_var]
+        features = [entropy, r_m, g_m, necrosis_ratio, std_dev, lap_var, chlorosis_factor, np.var(gray_f)*10]
         
         # 8-Qubit Zenith Protocol
         n_qubits = 8
@@ -241,24 +247,28 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
         cr = ClassicalRegister(n_qubits, 'c')
         qc = QuantumCircuit(qr, cr)
         
-        # 1. State Encoding Layer (Ry Rotations based on bio-features)
+        # 1. State Encoding Layer
         for i, val in enumerate(features):
             qc.ry(abs(val) * math.pi * 2, qr[i])
             
         qc.barrier()
-        # 2. Entanglement Ring Topology Layer
+        # 2. Pathogen Entropy Injection
+        if is_pathogen_hint:
+            for i in range(n_qubits):
+                qc.rx(math.pi/3, qr[i])
+                qc.h(qr[i])
+
+        # 3. Entanglement Cross-Coupling
         for i in range(n_qubits):
             qc.cx(qr[i], qr[(i+1) % n_qubits])
+            if i < n_qubits - 2:
+                qc.cz(qr[i], qr[i+2])
             
         qc.barrier()
-        # 3. Superposition & Mixing Layer
+        # 4. Superposition Mixing
         for i in range(n_qubits):
             qc.h(qr[i])
-            if i % 2 == 0:
-                qc.rz(math.pi/4, qr[i])
                 
-        qc.barrier()
-        # 4. Measurement
         qc.measure(qr, cr)
 
         try:
@@ -272,8 +282,7 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
                 result = job.result()[0]
                 counts = result.data.c.get_counts()
                 backend_name = backend.name
-            else:
-                raise ValueError("No token")
+            else: raise ValueError()
         except:
             from qiskit.primitives import StatevectorSampler
             sampler = StatevectorSampler()
@@ -286,25 +295,29 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
         dom_state = max(counts, key=counts.get)
         if isinstance(dom_state, int): dom_state = format(dom_state, f'0{n_qubits}b')
         
-        # Refined Severity Logic: Count of '1' bits indicates energy/entropy level
+        # RISK SCORING ENGINE
         bit_count = dom_state.count('1')
-        score = min(5, (bit_count // 2) + 1)
+        q_score = min(5, (bit_count // 2) + 1)
         
-        # VISUAL HEURISTIC: Direct check of Laplacian variance (spot density)
-        # This ensures 'Correct Risk' even if the quantum circuit is stable.
+        # Visual Heuristic Escalation (Based on real pixels)
         v_score = 1
-        if lap_var > 0.05: v_score = 2 
+        if lap_var > 0.04 or necrosis_ratio > 0.01: v_score = 2 
+        if lap_var > 0.10 or necrosis_ratio > 0.05: v_score = 3
+        if lap_var > 0.30 or necrosis_ratio > 0.12: v_score = 4
+        if lap_var > 0.60 or necrosis_ratio > 0.20: v_score = 5
+        
+        score = max(q_score, v_score)
+        
+        # BIOLOGICAL OVERRIDES
         if is_pathogen_hint:
-            score = max(score, 4 if score >= 3 else 3)
+            # If a pathogen is definitely found, the risk is at least Severe (4) if spots are seen, else Moderate (3)
+            min_risk = 4 if (lap_var > 0.08 or necrosis_ratio > 0.03) else 3
+            score = max(score, min_risk)
         
+        if is_healthy_hint and not (lap_var > 0.15 or necrosis_ratio > 0.05):
+            score = min(score, 2)
+            
         labels = ["Optimal", "Incipient", "Moderate", "Severe", "Critical"]
-        # Circuit Stats
-        gates = qc.count_ops()
-        depth = qc.depth()
-        
-        # We calculate entanglement by checking spread of states
-        entanglement_metric = min(1.0, len(counts) / (2**n_qubits * 0.1))
-        
         return {
             "score": score, 
             "label": labels[min(score-1, 4)], 
@@ -312,12 +325,12 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
             "backend": backend_name, 
             "entropy": entropy,
             "circuit_str": str(qc.draw(output='text')),
-            "gates": dict(gates),
-            "depth": depth,
-            "entanglement": entanglement_metric
+            "gates": dict(qc.count_ops()),
+            "depth": qc.depth(),
+            "entanglement": min(1.0, len(counts) / 25.6)
         }
     except Exception as e:
-        return {"score": 3, "label": "Simulator Matrix", "prob": {"0000": 1.0}, "backend": "local-sim-fallback", "circuit_str": "Circuit Generation Failure", "gates": {}, "depth": 0, "entanglement": 0}
+        return {"score": 3, "label": "Simulator Matrix", "prob": {"0000": 1.0}, "backend": "local-sim-fallback", "circuit_str": f"Error: {str(e)}", "gates": {}, "depth": 0, "entanglement": 0}
 
 # ===============================
 # SIDEBAR
