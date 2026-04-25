@@ -418,7 +418,10 @@ with st.sidebar:
         "PLANTNET": pn_k or os.getenv("PLANTNET_API_KEY") or (st.secrets.get("PLANTNET_API_KEY") if "PLANTNET_API_KEY" in st.secrets else None),
         "KINDWISE": kw_k or os.getenv("CROP_HEALTH_API_KEY") or (st.secrets.get("CROP_HEALTH_API_KEY") if "CROP_HEALTH_API_KEY" in st.secrets else None),
         "PERENUAL": os.getenv("PERENUAL_API_KEY") or (st.secrets.get("PERENUAL_API_KEY") if "PERENUAL_API_KEY" in st.secrets else None),
-        "IBM_QUANTUM": os.getenv("IBM_QUANTUM_TOKEN") or (st.secrets.get("IBM_QUANTUM_TOKEN") if "IBM_QUANTUM_TOKEN" in st.secrets else None)
+        "IBM_QUANTUM": os.getenv("IBM_QUANTUM_TOKEN") or (st.secrets.get("IBM_QUANTUM_TOKEN") if "IBM_QUANTUM_TOKEN" in st.secrets else None),
+        "NYCKEL_FID": st.session_state.get("nfid_over") or os.getenv("NYCKEL_FID"),
+        "NYCKEL_ID": st.session_state.get("nid_over") or os.getenv("NYCKEL_ID"),
+        "NYCKEL_SECRET": st.session_state.get("nsec_over") or os.getenv("NYCKEL_SECRET")
     }
     
     for k, v in keys.items():
@@ -434,6 +437,11 @@ with st.sidebar:
         st.caption("Overrides .env / Secrets")
         pk = st.text_input("New PlantNet Key", type="password", key="pk_over")
         ck = st.text_input("New Kindwise Key", type="password", key="ck_over")
+        st.markdown("---")
+        st.caption("🧬 Neural Remap (Nyckel)")
+        nfid = st.text_input("Nyckel Function ID", key="nfid_over")
+        nid = st.text_input("Nyckel Client ID", type="password", key="nid_over")
+        nsec = st.text_input("Nyckel Client Secret", type="password", key="nsec_over")
         if st.button("ACTIVATE CLOUD OVERRIDE"):
             if pk: 
                 os.environ["PLANTNET_API_KEY"] = pk
