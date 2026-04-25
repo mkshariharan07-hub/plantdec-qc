@@ -1171,4 +1171,4 @@ if chat_prompt := st.chat_input("Query the Quantum Oracle..."):
     st.rerun()
 
 
-st.caption("PlantPulse Zenith v5.0 | Enterprise Agritech Strategy | © 2026")
+st.caption("PlantPulse Zenith v5.0 | chasesolutions.in | © 2026")
