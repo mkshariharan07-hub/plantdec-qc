@@ -301,18 +301,7 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
         # VISUAL HEURISTIC: Direct check of Laplacian variance (spot density)
         # This ensures 'Correct Risk' even if the quantum circuit is stable.
         v_score = 1
-        if lap_var > 0.05: v_score = 2 # Incipient
-        if lap_var > 0.15: v_score = 3 # Moderate
-        if lap_var > 0.40: v_score = 4 # Severe
-        if lap_var > 0.80: v_score = 5 # Critical
-        
-        score = max(score, v_score)
-        
-        # Bias for healthy specimens
-        if is_healthy_hint and score > 2:
-            score = random.choice([1, 2])
-            
-        # ENFORCE RISK FOR PATHOGENS
+        if lap_var > 0.05: v_score = 2 
         if is_pathogen_hint:
             score = max(score, 4 if score >= 3 else 3)
         
