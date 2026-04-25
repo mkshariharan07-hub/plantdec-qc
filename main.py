@@ -676,33 +676,22 @@ with col_in:
                             
                             p_ai_disease = l_res.get('disease', 'Healthy/Indeterminate')
                             p_ai_plant = l_res.get('plant', 'Unknown')
-                            actual_plant = str(pn.get('scientific_name', '')).lower()
+                            actual_plant = str(pn.get('scientific_name', 'Specimen')).title()
                             
-                            # BOTANICAL CROSS-REFERENCE (Fix Host Mismatch)
-                            # If AI predicts a disease for a different plant (e.g. Apple Scab on Dogwood/Cucumber), 
-                            # we remap to the correct botanical equivalent.
-                            is_mismatch = False
-                            if "dogwood" in actual_plant or "cornus" in actual_plant:
-                                if "scab" in p_ai_disease.lower() or "apple" in p_ai_disease.lower() or "apple" in p_ai_plant.lower():
-                                    p_ai_disease = "Dogwood Anthracnose / Septoria"
-                                    is_mismatch = True
-                            elif "cucumber" in actual_plant or "cucumis" in actual_plant:
-                                if "scab" in p_ai_disease.lower() or "apple" in p_ai_disease.lower() or "apple" in p_ai_plant.lower():
-                                    p_ai_disease = "Angular Leaf Spot / Downy Mildew"
-                                    is_mismatch = True
-                            elif "tomato" in actual_plant or "solanum" in actual_plant:
-                                if "apple" in p_ai_plant.lower():
-                                    p_ai_disease = "Early Blight / Septoria"
-                                    is_mismatch = True
-
-                            if is_mismatch:
-                                status.write(f"🎯 Host Mismatch Detected ({p_ai_plant} -> {actual_plant}). Remapping Pathogen...")
+                            # DYNAMIC PATHOGEN MAPPING (Avoiding hardcoding)
+                            # We report the local model's class but add a 'Visual Equivalent' note 
+                            # if the predicted host doesn't match the actual specimen.
+                            diag_suffix = ""
+                            if p_ai_plant.lower() != "unknown" and p_ai_plant.lower() not in actual_plant.lower():
+                                diag_suffix = f" (Visual Match: {p_ai_disease})"
+                                # Use a generic descriptive name for the UI, keeping the 'actual' class in the description
+                                p_ai_disease = f"Pathogen Detected: {actual_plant} variant"
 
                             kw = {
                                 "disease": p_ai_disease,
                                 "plant": l_res.get('plant', pn.get('scientific_name')),
                                 "probability": l_res.get('confidence', 0),
-                                "description": f"Diagnosis recovered via local Pathogen AI mesh. Confidence: {l_res.get('confidence', 0)}%. Host-Pathogen Cross-Reference applied.",
+                                "description": f"Diagnosis via local Neural Mesh. Visual pattern matches {l_res.get('disease')}{diag_suffix}. Recommended: Verify via botanical lab if symptoms persist.",
                                 "treatment": {"Primary Protocol": l_res.get('tips', 'Isolate and monitor.')}
                             }
                         

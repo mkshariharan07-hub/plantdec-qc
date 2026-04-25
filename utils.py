@@ -553,3 +553,36 @@ def identify_disease_with_plantnet(img_bgr: np.ndarray, api_key: str = None) -> 
             return {"error": f"Pl@ntNet Disease API Rejected: HTTP {response.status_code}"}
     except Exception as e:
         return {"error": f"Pl@ntNet Disease Root Failure: {str(e)}"}
+
+def remap_disease_with_nyckel(text: str, function_id: str, client_id: str = None, client_secret: str = None) -> str:
+    """Remap a disease name to its botanical equivalent using Nyckel Text Classification."""
+    if not function_id:
+        return text
+        
+    try:
+        # Step 1: Get OAuth Token (If credentials provided)
+        auth_url = "https://www.nyckel.com/connect/token"
+        token = None
+        if client_id and client_secret:
+            auth_res = requests.post(auth_url, data={
+                'client_id': client_id,
+                'client_secret': client_secret,
+                'grant_type': 'client_credentials'
+            }, timeout=10)
+            if auth_res.status_code == 200:
+                token = auth_res.json().get('access_token')
+
+        # Step 2: Invoke Function
+        invoke_url = f"https://www.nyckel.com/v1/functions/{function_id}/invoke"
+        headers = {"Authorization": f"Bearer {token}"} if token else {}
+        
+        # Nyckel Expects: {"data": "text to classify"}
+        response = requests.post(invoke_url, headers=headers, json={"data": text}, timeout=10)
+        
+        if response.status_code == 200:
+            res = response.json()
+            # Nyckel returns labelName for the top prediction
+            return res.get('labelName', text)
+    except:
+        pass
+    return text
