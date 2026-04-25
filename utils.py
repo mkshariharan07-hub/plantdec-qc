@@ -251,6 +251,44 @@ DISEASE_INFO: Dict[str, Dict] = {
     },
 }
 
+# BOTANICAL CROSS-REFERENCE MATRIX
+# Maps visual patterns from general models to host-specific pathogens.
+CROSS_REFERENCE_MATRIX: Dict[str, Dict[str, str]] = {
+    "dogwood": {
+        "scab": "Dogwood Anthracnose / Septoria",
+        "blight": "Dogwood Anthracnose",
+        "spot": "Septoria Leaf Spot"
+    },
+    "cucumber": {
+        "scab": "Angular Leaf Spot",
+        "blight": "Downy Mildew",
+        "spot": "Angular Leaf Spot"
+    },
+    "tomato": {
+        "scab": "Septoria Leaf Spot",
+        "blight": "Early/Late Blight",
+        "spot": "Target Spot"
+    },
+    "potato": {
+        "scab": "Common Scab",
+        "blight": "Late Blight"
+    }
+}
+
+def get_botanical_equivalent(host: str, visual_pattern: str) -> Optional[str]:
+    """Look up the scientifically accurate disease name for a specific host based on visual pattern."""
+    host_key = host.lower()
+    pattern_key = visual_pattern.lower().replace("_", " ")
+    
+    # Check for host match
+    for h_key, patterns in CROSS_REFERENCE_MATRIX.items():
+        if h_key in host_key:
+            # Check for pattern match
+            for p_key, actual_name in patterns.items():
+                if p_key in pattern_key:
+                    return actual_name
+    return None
+
 _FALLBACK_INFO = {
     "severity": "medium",
     "color":    "#f59e0b",

@@ -50,7 +50,7 @@ except ImportError:
 # Core Utilities
 from utils import (decode_bytes_to_bgr, identify_plant_with_plantnet, identify_disease_with_kindwise, 
                   identify_disease_with_plantnet, get_perenual_care_info, get_disease_info, 
-                  predict_image, load_model_and_scaler, remap_disease_with_nyckel)
+                  predict_image, load_model_and_scaler, remap_disease_with_nyckel, get_botanical_equivalent)
 
 load_dotenv()
 
@@ -705,8 +705,13 @@ with col_in:
                                         keys.get('NYCKEL_SECRET')
                                     )
                                 else:
-                                    # Fallback to generic if no Nyckel provided
-                                    p_ai_disease = f"Pathogen Detected: {actual_plant} variant"
+                                    # BOTANICAL MATRIX LOOKUP (Scientific Fallback)
+                                    botanical_name = get_botanical_equivalent(actual_plant, p_ai_disease)
+                                    if botanical_name:
+                                        p_ai_disease = botanical_name
+                                    else:
+                                        # Fallback to generic if no match
+                                        p_ai_disease = f"Pathogen Detected: {actual_plant} variant"
 
                             kw = {
                                 "disease": p_ai_disease,
