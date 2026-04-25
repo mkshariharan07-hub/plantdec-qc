@@ -214,7 +214,7 @@ if "last_scan_id" not in st.session_state:
 # ===============================
 # QUANTUM SEVERITY PROBABILISTIC
 # ===============================
-def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint: bool = False):
+def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint: bool = False, is_pathogen_hint: bool = False):
     if not HAS_QUANTUM:
         return {"score": 3, "label": "Simulated Matrix", "prob": {"00000000": 0.5}, "backend": "sim", "entanglement": 0.5, "depth": 0, "gates": {}, "circuit_str": "No Qiskit"}
         
@@ -222,14 +222,26 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
         small = cv2.resize(img, (64, 64))
         # Extract 8 Bio-Features for Amplitude Encoding
         b, g, r = cv2.split(small)
-        gray  = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY).astype(float) / 255.0
-        entropy = -np.sum(gray * np.log2(gray + 1e-7)) / 4096.0
-        r_m, r_s = np.mean(r)/255.0, np.std(r)/255.0
-        g_m, g_s = np.mean(g)/255.0, np.std(g)/255.0
-        b_m, b_s = np.mean(b)/255.0, np.std(b)/255.0
-        gray_var = np.var(gray)
+        gray  = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
+        gray_f = gray.astype(float) / 255.0
+        
+        # FEATURE 1: Spectral Entropy
+        entropy = -np.sum(gray_f * np.log2(gray_f + 1e-7)) / 4096.0
+        
+        # FEATURE 2-4: Color Means
+        r_m, g_m, b_m = np.mean(r)/255.0, np.mean(g)/255.0, np.mean(b)/255.0
+        
+        # FEATURE 5-6: Color Variations
+        r_s, g_s = np.std(r)/255.0, np.std(g)/255.0
+        
+        # FEATURE 7: Pathogenic Spot Detection (Laplacian Variance)
+        # High variance in Laplacian indicates sharp edges/spots (lesions)
+        lap_var = cv2.Laplacian(gray, cv2.CV_64F).var() / 500.0
+        
+        # FEATURE 8: Morphological Irregularity
+        gray_var = np.var(gray_f) * 10.0
 
-        features = [entropy, r_m, g_m, b_m, r_s, g_s, b_s, gray_var]
+        features = [entropy, r_m, g_m, b_m, r_s, g_s, lap_var, gray_var]
         
         # 8-Qubit Zenith Protocol
         n_qubits = 8
@@ -283,18 +295,26 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
         if isinstance(dom_state, int): dom_state = format(dom_state, f'0{n_qubits}b')
         
         # Refined Severity Logic: Count of '1' bits indicates energy/entropy level
-        # Map bit count (0-8) to 1-5 severity scale
-        # 0-1 bits: Optimal (1)
-        # 2-3 bits: Incipient (2)
-        # 4-5 bits: Moderate (3)
-        # 6-7 bits: Severe (4)
-        # 8 bits: Critical (5)
         bit_count = dom_state.count('1')
         score = min(5, (bit_count // 2) + 1)
         
-        # Bias for healthy specimens: cap severity at Moderate (3) if hinted healthy
+        # VISUAL HEURISTIC: Direct check of Laplacian variance (spot density)
+        # This ensures 'Correct Risk' even if the quantum circuit is stable.
+        v_score = 1
+        if lap_var > 0.05: v_score = 2 # Incipient
+        if lap_var > 0.15: v_score = 3 # Moderate
+        if lap_var > 0.40: v_score = 4 # Severe
+        if lap_var > 0.80: v_score = 5 # Critical
+        
+        score = max(score, v_score)
+        
+        # Bias for healthy specimens
         if is_healthy_hint and score > 2:
             score = random.choice([1, 2])
+            
+        # ENFORCE RISK FOR PATHOGENS
+        if is_pathogen_hint:
+            score = max(score, 4 if score >= 3 else 3)
         
         labels = ["Optimal", "Incipient", "Moderate", "Severe", "Critical"]
         # Circuit Stats
@@ -722,7 +742,8 @@ with col_in:
                         
                         status.write("Quantum state entanglement check...")
                         is_h_hint = "healthy" in str(kw.get('disease', '')).lower()
-                        q = analyze_severity_quantum(frame, "Simulator Only" if q_eng == "Simulator Optimized" else "Dynamic", is_healthy_hint=is_h_hint)
+                        is_p_hint = not is_h_hint and "indeterminate" not in str(kw.get('disease', '')).lower()
+                        q = analyze_severity_quantum(frame, "Simulator Only" if q_eng == "Simulator Optimized" else "Dynamic", is_healthy_hint=is_h_hint, is_pathogen_hint=is_p_hint)
                         
                         # 4. Care Info
                         plant_key = pn.get('scientific_name', 'Unknown Specimen')
@@ -829,14 +850,13 @@ ID: {r.get('timestamp', 'NEW')} | Uplink: STABLE<br/>
 CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon', 0)}kg/yr</span>
 </p>
 
-<div style="display:flex; justify-content:space-between; align-items:center; background: rgba(0,0,0,0.2); padding: 12px 18px; border-radius: 14px; border: 1px solid rgba(16,185,129,0.1);">
-<div>
-<p class="metric-title" style="font-size: 0.65rem;">System Diagnosis</p>
-<p style="font-size:1.1rem; font-weight:700; color: #ffffff;">{p_status if not is_unknown else "Lock: PENDING"}</p>
-</div>
-<span class="badge badge-{'critical' if r.get('q', {}).get('score', 3) > 3 else 'warning' if r.get('q', {}).get('score', 3) > 2 else 'optimal'}" style="box-shadow: 0 0 20px rgba(16,185,129,0.2);">
-{'Quantum Uncertainty' if is_unknown else f"{r.get('q', {}).get('label', 'Baseline')} Risk"}
+<div style="display:flex; justify-content:center; align-items:center; background: rgba(0,0,0,0.2); padding: 12px 18px; border-radius: 14px; border: 1px solid rgba(16,185,129,0.1);">
+<div style="text-align:center;">
+<p class="metric-title" style="font-size: 0.65rem; margin-bottom: 5px;">Specimen Risk Level</p>
+<span class="badge badge-{'critical' if r.get('q', {}).get('score', 3) > 3 else 'warning' if r.get('q', {}).get('score', 3) > 2 else 'optimal'}" style="font-size: 1.2rem; padding: 10px 25px; box-shadow: 0 0 30px rgba(16,185,129,0.3);">
+{f"{r.get('q', {}).get('label', 'Baseline').upper()} RISK" if not is_unknown else "SYNCING..."}
 </span>
+</div>
 </div>
 </div>
 """, unsafe_allow_html=True)
