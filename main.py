@@ -679,21 +679,30 @@ with col_in:
                         if not raw_rx:
                             raw_rx = {"remedy": "Isolate specimen and monitor microbial balance."}
                         
-                        d_lower = str(kw.get('disease', '')).lower()
+                        d_name = kw.get('disease', 'Healthy/Indeterminate')
+                        d_desc = kw.get('description') or "Specimen exhibits a stable bio-signature with no dominant pathological vectors detected."
+                        
+                        # CROSS-VERIFICATION: If AI says Healthy but Quantum says Critical/Severe
+                        if ("healthy" in d_name.lower() or "indeterminate" in d_name.lower()) and q.get('score', 1) >= 4:
+                            d_name = "Undiagnosed Pathogen"
+                            d_desc = "High cellular entropy and spectral variance detected. Visible lesions suggest a pathogenic vector not currently indexed in the local mesh."
+                            raw_rx = {"Quarantine": "Isolate the plant immediately to prevent potential spread while a deep-tissue lab analysis is conducted."}
+
+                        d_lower = d_name.lower()
                         p_cat = "Organic Bio-Stimulant"
                         p_search = "liquid+seaweed+fertilizer"
-                        if "fungal" in d_lower: p_cat, p_search = "Fungicide", "organic+fungicide"
+                        if "fungal" in d_lower or "pathogen" in d_lower: p_cat, p_search = "Fungicide", "organic+fungicide"
                         elif "bacteria" in d_lower: p_cat, p_search = "Antibactericide", "plant+antibacterial"
                         elif "pest" in d_lower or "insect" in d_lower: p_cat, p_search = "Pesticide", "neem+oil+pesticide"
 
                         res = {
                             "plant": plant_key,
                             "common_name": c_name,
-                            "disease": kw.get('disease', 'Healthy/Indeterminate'),
+                            "disease": d_name,
                             "score": pn.get('score', 0),
                             "q": q,
                             "care": care,
-                            "pathology": kw.get('description') or "Specimen exhibits a stable bio-signature with no dominant pathological vectors detected.",
+                            "pathology": d_desc,
                             "rx": raw_rx,
                             "p_cat": p_cat,
                             "p_link": f"https://www.amazon.com/s?k={p_search}",
