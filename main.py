@@ -48,17 +48,9 @@ except ImportError:
     HAS_QUANTUM = False
 
 # Core Utilities
-from utils import (
-    decode_bytes_to_bgr,
-    identify_plant_with_plantnet,
-    identify_disease_with_kindwise,
-    identify_disease_with_plantnet,
-    get_perenual_care_info,
-    get_disease_info,
-    predict_image,
-    load_model_and_scaler,
-    remap_disease_with_nyckel
-)
+from utils import (decode_bytes_to_bgr, identify_plant_with_plantnet, identify_disease_with_kindwise, 
+                  identify_disease_with_plantnet, get_perenual_care_info, get_disease_info, 
+                  predict_image, load_model_and_scaler, remap_disease_with_nyckel)
 
 load_dotenv()
 

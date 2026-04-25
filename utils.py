@@ -21,7 +21,7 @@ os.environ['HTTPS_PROXY'] = ''
 
 import requests
 import base64
-from typing import Optional
+from typing import Optional, Dict
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -158,7 +158,7 @@ def decode_file_to_bgr(path: str) -> Optional[np.ndarray]:
 # ═══════════════════════════════════════════════════════════════════════════════
 # DISEASE KNOWLEDGE BASE
 # ═══════════════════════════════════════════════════════════════════════════════
-DISEASE_INFO: dict[str, dict] = {
+DISEASE_INFO: Dict[str, Dict] = {
     "healthy": {
         "severity": "low",
         "color":    "#10b981",
