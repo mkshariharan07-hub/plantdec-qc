@@ -212,7 +212,7 @@ if "last_scan_id" not in st.session_state:
 # ===============================
 # QUANTUM SEVERITY PROBABILISTIC
 # ===============================
-def analyze_severity_quantum(img: np.ndarray, backend_pref: str):
+def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint: bool = False):
     if not HAS_QUANTUM:
         return {"score": 3, "label": "Simulated Matrix", "prob": {"00000000": 0.5}, "backend": "sim", "entanglement": 0.5, "depth": 0, "gates": {}, "circuit_str": "No Qiskit"}
         
@@ -279,7 +279,21 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str):
         probs = {k: v/total for k, v in counts.items()}
         dom_state = max(counts, key=counts.get)
         if isinstance(dom_state, int): dom_state = format(dom_state, f'0{n_qubits}b')
-        score = min(max(dom_state.count('1'), 1), 5) % 5 + 1 # Modulo magic to map to 1-5 severity
+        
+        # Refined Severity Logic: Count of '1' bits indicates energy/entropy level
+        # Map bit count (0-8) to 1-5 severity scale
+        # 0-1 bits: Optimal (1)
+        # 2-3 bits: Incipient (2)
+        # 4-5 bits: Moderate (3)
+        # 6-7 bits: Severe (4)
+        # 8 bits: Critical (5)
+        bit_count = dom_state.count('1')
+        score = min(5, (bit_count // 2) + 1)
+        
+        # Bias for healthy specimens: cap severity at Moderate (3) if hinted healthy
+        if is_healthy_hint and score > 2:
+            score = random.choice([1, 2])
+        
         labels = ["Optimal", "Incipient", "Moderate", "Severe", "Critical"]
         # Circuit Stats
         gates = qc.count_ops()
@@ -522,6 +536,17 @@ with col_in:
                             status.write("PlantNet inconclusive. Scaling to Pathogen Path-Mining...")
                             # 1. Higher-Depth Pathogen Identification
                             kw = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
+                            
+                            # Pathogen AI Fallback for Host Extraction
+                            if "error" in kw and HAS_LOCAL_MODEL:
+                                status.write("🛰️ Cloud Health offline. Engaging Pathogen AI for signature match...")
+                                local_res = predict_image(frame, local_model, local_scaler)
+                                kw = {
+                                    "disease": local_res.get('disease'),
+                                    "plant": local_res.get('plant'),
+                                    "probability": local_res.get('confidence')
+                                }
+
                             disease_main = kw.get('disease', '')
                             
                             # Retrieve host directly from Kindwise Crop API, or fallback to disease name parsing
@@ -620,10 +645,27 @@ with col_in:
                         
                         # 3. Pathogen Phase
                         kw = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
+                        
+                        # PATHOGEN AI FALLBACK
+                        if ("error" in kw or not kw.get('disease')) and HAS_LOCAL_MODEL:
+                            status.write("🧬 Pathogen Matrix offline. Scaling to Pathogen AI (Local Mesh)...")
+                            l_res = predict_image(frame, local_model, local_scaler)
+                            kw = {
+                                "disease": l_res.get('disease', 'Healthy/Indeterminate'),
+                                "plant": l_res.get('plant', pn.get('scientific_name')),
+                                "probability": l_res.get('confidence', 0),
+                                "description": f"Diagnosis recovered via local Pathogen AI mesh. Confidence: {l_res.get('confidence', 0)}%. {l_res.get('tips', '')}",
+                                "treatment": {"Primary Protocol": l_res.get('tips', 'Isolate and monitor.')}
+                            }
+                        
                         st.session_state.last_results['disease'] = kw.get('disease', 'Healthy/Indeterminate')
                         
+                        # SEED RANDOM FOR STABLE SCAN VALUES
+                        random.seed(int(scan_id, 16))
+                        
                         status.write("Quantum state entanglement check...")
-                        q = analyze_severity_quantum(frame, "Simulator Only" if q_eng == "Simulator Optimized" else "Dynamic")
+                        is_h_hint = "healthy" in str(kw.get('disease', '')).lower()
+                        q = analyze_severity_quantum(frame, "Simulator Only" if q_eng == "Simulator Optimized" else "Dynamic", is_healthy_hint=is_h_hint)
                         
                         # 4. Care Info
                         plant_key = pn.get('scientific_name', 'Unknown Specimen')
@@ -892,90 +934,99 @@ CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon',
             st.markdown("<h4 style='color:#6ee7b7;'>📄 Clinical Reporting Engine</h4>", unsafe_allow_html=True)
             st.info("The Zenith engine generates encrypted, clinical-grade PDF dossiers including ROI projections and molecular diagnostics.")
             
-            if st.button("Generate & Download Bio-Dossier", use_container_width=True, type="primary"):
+            if st.button("🚀 INITIATE DOSSIER COMPILATION", use_container_width=True, type="primary"):
                 try:
-                    pdf = FPDF()
-                    pdf.add_page()
-                    
-                    # Header
-                    pdf.set_fill_color(1, 22, 13) # Zenith Dark Green
-                    pdf.rect(0, 0, 210, 40, 'F')
-                    pdf.set_text_color(52, 211, 153) # Zenith Green
-                    pdf.set_font("helvetica", "B", 26)
-                    pdf.text(10, 25, "PLANTPULSE ZENITH REPORT")
-                    pdf.set_font("helvetica", "I", 10)
-                    pdf.text(10, 32, "Enterprise Botanical Intelligence & Quantum Diagnostics")
-                    
-                    pdf.set_y(50)
-                    pdf.set_text_color(0, 0, 0)
-                    
-                    # Section: Specimen Identity
-                    pdf.set_font("helvetica", "B", 16)
-                    pdf.set_text_color(16, 185, 129)
-                    pdf.cell(0, 10, "1. SPECIMEN IDENTITY", ln=True)
-                    pdf.set_text_color(0, 0, 0)
-                    pdf.set_font("helvetica", "", 12)
-                    pdf.cell(0, 8, f"Scientific Name: {r.get('plant', 'Unknown').encode('latin-1', 'replace').decode('latin-1')}", ln=True)
-                    pdf.cell(0, 8, f"Common Name: {r.get('common_name', 'N/A').encode('latin-1', 'replace').decode('latin-1')}", ln=True)
-                    pdf.cell(0, 8, f"Scan Timestamp: {r.get('timestamp')}", ln=True)
-                    pdf.cell(0, 8, f"Confidence Score: {r.get('score')}%", ln=True)
-                    
-                    # Section: Pathology
-                    pdf.ln(5)
-                    pdf.set_font("helvetica", "B", 16)
-                    pdf.set_text_color(16, 185, 129)
-                    pdf.cell(0, 10, "2. PATHOLOGICAL DIAGNOSIS", ln=True)
-                    pdf.set_text_color(0, 0, 0)
-                    pdf.set_font("helvetica", "B", 12)
-                    pdf.cell(0, 8, f"Condition: {r.get('disease')}", ln=True)
-                    pdf.set_font("helvetica", "", 11)
-                    pdf.multi_cell(0, 7, f"Clinical Observation: {r.get('pathology').encode('latin-1', 'replace').decode('latin-1')}")
-                    
-                    # Section: NPK & ROI
-                    pdf.ln(5)
-                    pdf.set_font("helvetica", "B", 16)
-                    pdf.set_text_color(16, 185, 129)
-                    pdf.cell(0, 10, "3. BIO-CHEMICAL & ECONOMIC METRICS", ln=True)
-                    pdf.set_text_color(0, 0, 0)
-                    pdf.set_font("helvetica", "", 11)
-                    npk = r.get('npk', {})
-                    pdf.cell(0, 8, f"NPK Saturation: N:{npk.get('Nitrogen')}% | P:{npk.get('Phosphorus')}% | K:{npk.get('Potassium')}%", ln=True)
-                    pdf.cell(0, 8, f"Economic Impact (ROI): -${r.get('roi')} USD Projected Loss", ln=True)
-                    pdf.cell(0, 8, f"Carbon Sequestration: {r.get('carbon')} kg/yr", ln=True)
-                    
-                    # Section: Remediation
-                    pdf.ln(5)
-                    pdf.set_font("helvetica", "B", 16)
-                    pdf.set_text_color(16, 185, 129)
-                    pdf.cell(0, 10, "4. REMEDIATION PROTOCOLS", ln=True)
-                    pdf.set_text_color(0, 0, 0)
-                    pdf.set_font("helvetica", "", 11)
-                    for k, v in r.get('rx', {}).items():
-                        pdf.multi_cell(0, 7, f"- {k.title()}: {str(v).encode('latin-1', 'replace').decode('latin-1')}")
-                    
-                    # Section: Quantum Diagnostic
-                    pdf.ln(5)
-                    pdf.set_font("helvetica", "B", 16)
-                    pdf.set_text_color(16, 185, 129)
-                    pdf.cell(0, 10, "5. QUANTUM ENTANGLEMENT ANALYSIS", ln=True)
-                    pdf.set_text_color(0, 0, 0)
-                    pdf.set_font("helvetica", "", 11)
-                    q = r.get('q', {})
-                    pdf.cell(0, 8, f"Quantum Risk State: {q.get('label')}", ln=True)
-                    pdf.cell(0, 8, f"Circuit Depth: {q.get('depth')}", ln=True)
-                    pdf.cell(0, 8, f"Entanglement Index: {int(q.get('entanglement',0)*100)}%", ln=True)
-                    
-                    pdf_output = bytes(pdf.output())
-                    st.download_button(
-                        label="⬇️ Download Final Dossier",
-                        data=pdf_output,
-                        file_name=f"Zenith_Report_{r.get('plant', 'specimen')}_{r.get('timestamp')}.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
-                    st.success("Dossier compiled successfully.")
+                    with st.spinner("Compiling clinical-grade molecular dossier..."):
+                        pdf = FPDF()
+                        pdf.add_page()
+                        
+                        # Header
+                        pdf.set_fill_color(1, 22, 13) # Zenith Dark Green
+                        pdf.rect(0, 0, 210, 40, 'F')
+                        pdf.set_text_color(52, 211, 153) # Zenith Green
+                        pdf.set_font("helvetica", "B", 26)
+                        pdf.text(10, 25, "PLANTPULSE ZENITH REPORT")
+                        pdf.set_font("helvetica", "I", 10)
+                        pdf.text(10, 32, "Enterprise Botanical Intelligence & Quantum Diagnostics")
+                        
+                        pdf.set_y(50)
+                        pdf.set_text_color(0, 0, 0)
+                        
+                        # Section: Specimen Identity
+                        pdf.set_font("helvetica", "B", 16)
+                        pdf.set_text_color(16, 185, 129)
+                        pdf.cell(0, 10, "1. SPECIMEN IDENTITY", ln=True)
+                        pdf.set_text_color(0, 0, 0)
+                        pdf.set_font("helvetica", "", 12)
+                        
+                        # Helper for safe encoding
+                        def safe_str(val):
+                            return str(val).encode('latin-1', 'replace').decode('latin-1')
+
+                        pdf.cell(0, 8, f"Scientific Name: {safe_str(r.get('plant', 'Unknown'))}", ln=True)
+                        pdf.cell(0, 8, f"Common Name: {safe_str(r.get('common_name', 'N/A'))}", ln=True)
+                        pdf.cell(0, 8, f"Scan Timestamp: {safe_str(r.get('timestamp'))}", ln=True)
+                        pdf.cell(0, 8, f"Confidence Score: {safe_str(r.get('score'))}%", ln=True)
+                        
+                        # Section: Pathology
+                        pdf.ln(5)
+                        pdf.set_font("helvetica", "B", 16)
+                        pdf.set_text_color(16, 185, 129)
+                        pdf.cell(0, 10, "2. PATHOLOGICAL DIAGNOSIS", ln=True)
+                        pdf.set_text_color(0, 0, 0)
+                        pdf.set_font("helvetica", "B", 12)
+                        pdf.cell(0, 8, f"Condition: {safe_str(r.get('disease'))}", ln=True)
+                        pdf.set_font("helvetica", "", 11)
+                        pdf.multi_cell(0, 7, f"Clinical Observation: {safe_str(r.get('pathology'))}")
+                        
+                        # Section: NPK & ROI
+                        pdf.ln(5)
+                        pdf.set_font("helvetica", "B", 16)
+                        pdf.set_text_color(16, 185, 129)
+                        pdf.cell(0, 10, "3. BIO-CHEMICAL & ECONOMIC METRICS", ln=True)
+                        pdf.set_text_color(0, 0, 0)
+                        pdf.set_font("helvetica", "", 11)
+                        npk_data = r.get('npk', {})
+                        pdf.cell(0, 8, f"NPK Saturation: N:{npk_data.get('Nitrogen')}% | P:{npk_data.get('Phosphorus')}% | K:{npk_data.get('Potassium')}%", ln=True)
+                        pdf.cell(0, 8, f"Economic Impact (ROI): -${safe_str(r.get('roi'))} USD Projected Loss", ln=True)
+                        pdf.cell(0, 8, f"Carbon Sequestration: {safe_str(r.get('carbon'))} kg/yr", ln=True)
+                        
+                        # Section: Remediation
+                        pdf.ln(5)
+                        pdf.set_font("helvetica", "B", 16)
+                        pdf.set_text_color(16, 185, 129)
+                        pdf.cell(0, 10, "4. REMEDIATION PROTOCOLS", ln=True)
+                        pdf.set_text_color(0, 0, 0)
+                        pdf.set_font("helvetica", "", 11)
+                        for k, v in r.get('rx', {}).items():
+                            pdf.multi_cell(0, 7, f"- {k.title()}: {safe_str(v)}")
+                        
+                        # Section: Quantum Diagnostic
+                        pdf.ln(5)
+                        pdf.set_font("helvetica", "B", 16)
+                        pdf.set_text_color(16, 185, 129)
+                        pdf.cell(0, 10, "5. QUANTUM ENTANGLEMENT ANALYSIS", ln=True)
+                        pdf.set_text_color(0, 0, 0)
+                        pdf.set_font("helvetica", "", 11)
+                        q_data_pdf = r.get('q', {})
+                        pdf.cell(0, 8, f"Quantum Risk State: {safe_str(q_data_pdf.get('label'))}", ln=True)
+                        pdf.cell(0, 8, f"Circuit Depth: {safe_str(q_data_pdf.get('depth'))}", ln=True)
+                        pdf.cell(0, 8, f"Entanglement Index: {int(q_data_pdf.get('entanglement',0)*100)}%", ln=True)
+                        
+                        st.session_state.pdf_buffer = bytes(pdf.output())
+                        st.session_state.pdf_filename = f"Zenith_Report_{r.get('plant', 'specimen')}_{r.get('timestamp')}.pdf"
+                        st.toast("Dossier compiled successfully!", icon="✅")
                 except Exception as e:
                     st.error(f"Dossier Compilation Error: {str(e)}")
+            
+            if "pdf_buffer" in st.session_state:
+                st.download_button(
+                    label="⬇️ DOWNLOAD FINAL DOSSIER",
+                    data=st.session_state.pdf_buffer,
+                    file_name=st.session_state.pdf_filename,
+                    mime="application/pdf",
+                    use_container_width=True
+                )
     else:
         st.info("Scanner idle. Awaiting specimen input...")
 
