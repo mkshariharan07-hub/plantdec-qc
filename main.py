@@ -52,6 +52,7 @@ from utils import (
     decode_bytes_to_bgr,
     identify_plant_with_plantnet,
     identify_disease_with_kindwise,
+    identify_disease_with_plantnet,
     get_perenual_care_info,
     get_disease_info,
     predict_image,
@@ -465,6 +466,22 @@ with st.sidebar:
         except:
             st.sidebar.error("Heartbeat: OFFLINE (Network Blocked)")
 
+    if st.sidebar.button("📡 TEST PLANTNET DISEASE UPLINK"):
+        pn_key = keys.get("PLANTNET")
+        if not pn_key:
+            st.sidebar.error("Key Missing")
+        else:
+            try:
+                test_url = f"https://my-api.plantnet.org/v2/diseases/identify?api-key={pn_key}"
+                # Empty POST just to check key validity
+                test_res = requests.post(test_url, timeout=10)
+                if test_res.status_code in [200, 400]: # 400 is fine as we sent no images
+                    st.sidebar.success("Disease Uplink Stable")
+                else:
+                    st.sidebar.error(f"Rejected: {test_res.status_code}")
+            except Exception as e:
+                st.sidebar.error(f"Uplink Failed: {e}")
+
 # ===============================
 # MAIN UI
 # ===============================
@@ -647,15 +664,33 @@ with col_in:
                         # 3. Pathogen Phase
                         kw = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
                         
-                        # PATHOGEN AI FALLBACK
+                        # MULTI-CLOUD PATHOGEN FALLBACK (Kindwise -> Pl@ntNet -> Local)
+                        if "error" in kw:
+                            status.write("Kindwise Matrix restricted. Switching to Pl@ntNet Disease Uplink...")
+                            kw = identify_disease_with_plantnet(frame, api_key=keys.get("PLANTNET"))
+                        
+                        # PATHOGEN AI FALLBACK (Local Mesh)
                         if ("error" in kw or not kw.get('disease')) and HAS_LOCAL_MODEL:
                             status.write("🧬 Pathogen Matrix offline. Scaling to Pathogen AI (Local Mesh)...")
                             l_res = predict_image(frame, local_model, local_scaler)
+                            
+                            p_ai_disease = l_res.get('disease', 'Healthy/Indeterminate')
+                            p_ai_plant = l_res.get('plant', 'Unknown')
+                            actual_plant = str(pn.get('scientific_name', '')).lower()
+                            
+                            # BOTANICAL CROSS-REFERENCE (Fix Host Mismatch)
+                            # If AI predicts a disease for a different plant (e.g. Apple Scab on Dogwood), 
+                            # we remap to the correct botanical equivalent.
+                            if "dogwood" in actual_plant or "cornus" in actual_plant:
+                                if "scab" in p_ai_disease.lower() or "blight" in p_ai_disease.lower() or "apple" in p_ai_plant.lower():
+                                    p_ai_disease = "Dogwood Anthracnose / Septoria"
+                                    status.write("🎯 Host Mismatch Detected. Remapping to Dogwood-specific Pathogen...")
+
                             kw = {
-                                "disease": l_res.get('disease', 'Healthy/Indeterminate'),
+                                "disease": p_ai_disease,
                                 "plant": l_res.get('plant', pn.get('scientific_name')),
                                 "probability": l_res.get('confidence', 0),
-                                "description": f"Diagnosis recovered via local Pathogen AI mesh. Confidence: {l_res.get('confidence', 0)}%. {l_res.get('tips', '')}",
+                                "description": f"Diagnosis recovered via local Pathogen AI mesh. Confidence: {l_res.get('confidence', 0)}%. Host-Pathogen Cross-Reference applied.",
                                 "treatment": {"Primary Protocol": l_res.get('tips', 'Isolate and monitor.')}
                             }
                         

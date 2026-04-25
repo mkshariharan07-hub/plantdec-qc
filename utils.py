@@ -504,3 +504,46 @@ def get_perenual_care_info(common_name: str) -> dict:
     except:
         pass
     return {}
+
+def identify_disease_with_plantnet(img_bgr: np.ndarray, api_key: str = None) -> dict:
+    """Identify diseases using Pl@ntNet Diseases API (v2)."""
+    if not api_key:
+        api_key = os.getenv("PLANTNET_API_KEY")
+    
+    if not api_key:
+        return {"error": "Pl@ntNet API Key missing"}
+        
+    try:
+        # Resize for API optimization
+        h, w = img_bgr.shape[:2]
+        if max(h, w) > 1024:
+            scale = 1024 / max(h, w)
+            img_bgr = cv2.resize(img_bgr, (0, 0), fx=scale, fy=scale)
+            
+        _, img_encoded = cv2.imencode(".jpg", img_bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
+        files = [('images', ('image.jpg', img_encoded.tobytes(), 'image/jpeg'))]
+        data = {'organs': 'auto'}
+        
+        url = f"https://my-api.plantnet.org/v2/diseases/identify?api-key={api_key}"
+        response = requests.post(url, files=files, data=data, timeout=20)
+        
+        if response.status_code == 200:
+            res = response.json()
+            results = res.get('results', [])
+            if results:
+                best = results[0]
+                disease_name = best.get('disease', {}).get('scientificNameWithoutAuthor') or best.get('disease', {}).get('scientificName')
+                common_names = best.get('disease', {}).get('commonNames', [])
+                
+                return {
+                    "disease": common_names[0] if common_names else disease_name,
+                    "probability": round(best.get('score', 0) * 100, 1),
+                    "description": f"Diagnosis via Pl@ntNet Disease Matrix. EPPO: {best.get('disease', {}).get('eppoCode', 'N/A')}",
+                    "details": best.get('disease', {})
+                }
+            else:
+                return {"error": "Pl@ntNet: No pathological vectors identified in specimen."}
+        else:
+            return {"error": f"Pl@ntNet Disease API Rejected: HTTP {response.status_code}"}
+    except Exception as e:
+        return {"error": f"Pl@ntNet Disease Root Failure: {str(e)}"}
