@@ -56,7 +56,8 @@ from utils import (
     get_perenual_care_info,
     get_disease_info,
     predict_image,
-    load_model_and_scaler
+    load_model_and_scaler,
+    remap_disease_with_nyckel
 )
 
 load_dotenv()
@@ -684,8 +685,19 @@ with col_in:
                             diag_suffix = ""
                             if p_ai_plant.lower() != "unknown" and p_ai_plant.lower() not in actual_plant.lower():
                                 diag_suffix = f" (Visual Match: {p_ai_disease})"
-                                # Use a generic descriptive name for the UI, keeping the 'actual' class in the description
-                                p_ai_disease = f"Pathogen Detected: {actual_plant} variant"
+                                
+                                # NYCKEL DYNAMIC REMAPPING
+                                if keys.get('NYCKEL_FID'):
+                                    remap_text = f"{p_ai_disease} on {actual_plant}"
+                                    p_ai_disease = remap_disease_with_nyckel(
+                                        remap_text, 
+                                        keys['NYCKEL_FID'], 
+                                        keys.get('NYCKEL_ID'), 
+                                        keys.get('NYCKEL_SECRET')
+                                    )
+                                else:
+                                    # Fallback to generic if no Nyckel provided
+                                    p_ai_disease = f"Pathogen Detected: {actual_plant} variant"
 
                             kw = {
                                 "disease": p_ai_disease,
