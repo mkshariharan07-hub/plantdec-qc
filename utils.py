@@ -243,6 +243,12 @@ DISEASE_INFO: dict[str, dict] = {
         "emoji":    "🔴",
         "tips":     "Prune out dead twigs. Apply fungicide (chlorothalonil) during bud break. Rake fallen leaves.",
     },
+    "angular_leaf_spot": {
+        "severity": "medium",
+        "color":    "#f97316",
+        "emoji":    "🟠",
+        "tips":     "Avoid overhead watering. Apply copper-based bactericide. Rotate crops to non-cucurbits.",
+    },
 }
 
 _FALLBACK_INFO = {
