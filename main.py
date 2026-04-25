@@ -679,12 +679,24 @@ with col_in:
                             actual_plant = str(pn.get('scientific_name', '')).lower()
                             
                             # BOTANICAL CROSS-REFERENCE (Fix Host Mismatch)
-                            # If AI predicts a disease for a different plant (e.g. Apple Scab on Dogwood), 
+                            # If AI predicts a disease for a different plant (e.g. Apple Scab on Dogwood/Cucumber), 
                             # we remap to the correct botanical equivalent.
+                            is_mismatch = False
                             if "dogwood" in actual_plant or "cornus" in actual_plant:
-                                if "scab" in p_ai_disease.lower() or "blight" in p_ai_disease.lower() or "apple" in p_ai_plant.lower():
+                                if "scab" in p_ai_disease.lower() or "apple" in p_ai_disease.lower() or "apple" in p_ai_plant.lower():
                                     p_ai_disease = "Dogwood Anthracnose / Septoria"
-                                    status.write("🎯 Host Mismatch Detected. Remapping to Dogwood-specific Pathogen...")
+                                    is_mismatch = True
+                            elif "cucumber" in actual_plant or "cucumis" in actual_plant:
+                                if "scab" in p_ai_disease.lower() or "apple" in p_ai_disease.lower() or "apple" in p_ai_plant.lower():
+                                    p_ai_disease = "Angular Leaf Spot / Downy Mildew"
+                                    is_mismatch = True
+                            elif "tomato" in actual_plant or "solanum" in actual_plant:
+                                if "apple" in p_ai_plant.lower():
+                                    p_ai_disease = "Early Blight / Septoria"
+                                    is_mismatch = True
+
+                            if is_mismatch:
+                                status.write(f"🎯 Host Mismatch Detected ({p_ai_plant} -> {actual_plant}). Remapping Pathogen...")
 
                             kw = {
                                 "disease": p_ai_disease,
