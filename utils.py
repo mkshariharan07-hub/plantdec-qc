@@ -821,11 +821,18 @@ def analyze_with_gemini(img_bgr: np.ndarray, api_key: str = None) -> dict:
 
     try:
         genai.configure(api_key=api_key)
-        # Fallback logic for regions where 1.5-flash is not 404-safe
+        
+        # Try to find the best available model
+        model_name = 'gemini-1.5-flash'
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            # Check if 1.5-flash is available in this region/account
+            available_models = [m.name for m in genai.list_models()]
+            if 'models/gemini-1.5-flash' not in available_models:
+                model_name = 'gemini-pro-vision'
         except:
-            model = genai.GenerativeModel('gemini-pro-vision')
+            pass # Fallback to 1.5-flash if list_models fails
+            
+        model = genai.GenerativeModel(model_name)
         
         # Convert BGR to RGB for Gemini
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
@@ -854,11 +861,11 @@ def analyze_with_gemini(img_bgr: np.ndarray, api_key: str = None) -> dict:
             "disease": res.get("disease", "Unknown"),
             "plant": res.get("plant", "Unknown"),
             "probability": res.get("confidence", 0),
-            "description": res.get("description", "Analyzed via Vision Intelligence Core."),
-            "source": "Vision AI"
+            "description": res.get("description", f"Analyzed via Gemini Vision ({model_name})."),
+            "source": "Gemini AI"
         }
     except Exception as e:
-        return {"error": f"Vision Integration Failure: {str(e)}"}
+        return {"error": f"Gemini Integration Failure: {str(e)}"}
 
 def get_chatgpt_advice(plant: str, disease: str, api_key: str = None) -> str:
     """Get professional treatment advice from ChatGPT."""

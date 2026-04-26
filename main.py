@@ -328,7 +328,7 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
 
     except Exception as e:
         # PURE PYTHON FALLBACK (High-precision biological math)
-        # If Quantum fails, we use a weighted entropy-laplacian model to ensure the user gets a result.
+        # Note: ChatGPT 429 error indicates a billing/quota issue with OpenAI.
         f_score = 1
         if lap_var > 0.05 or necrosis_ratio > 0.01: f_score = 2
         if lap_var > 0.15 or necrosis_ratio > 0.08: f_score = 3
@@ -647,15 +647,15 @@ with col_in:
                     st.session_state.last_results['timestamp'] = datetime.datetime.now().strftime("%H:%M:%S")
                     
                     try:
-                        status.write("Phase 1: Botanical Core Uplink...")
+                        status.write("Phase 1: PlantNet Botanical Uplink...")
                         pn = identify_plant_with_plantnet(frame, api_key=keys.get("BOTANICAL_DB"), verify_ssl=ssl_verify)
                         
                         if "error" in pn:
-                            status.write(f"⚠️ Botanical Core: {pn['error']}")
+                            status.write(f"⚠️ PlantNet: {pn['error']}")
                             # If no key, maybe Kindwise or Local Mesh can help
                         else:
                             common_name = pn.get('common_names')[0] if pn.get('common_names') else pn.get('scientific_name')
-                            status.write(f"✅ Botanical Core: {common_name} ({pn.get('score')}% confidence)")
+                            status.write(f"✅ PlantNet: {common_name} ({pn.get('score')}% confidence)")
                         
                         # LOG FOR DEEP-DEBUG
                         log_path = os.path.join(os.path.dirname(__file__), "api_log.txt")
@@ -976,9 +976,9 @@ with col_in:
                         ch, cw = h//2, w//2
                         res["micro_img"] = frame[max(0, ch-128):min(h, ch+128), max(0, cw-128):min(w, cw+128)]
 
-                        # 6. Professional Remediation Insights
+                        # 6. ChatGPT Professional Insights
                         if use_chatgpt and "healthy" not in d_name.lower():
-                            status.write("Consulting Botanical Expert Core...")
+                            status.write("Consulting ChatGPT Botanical Expert...")
                             gpt_advice = get_chatgpt_advice(c_name, d_name)
                             res["gpt_advice"] = gpt_advice
                         else:
