@@ -558,6 +558,7 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray, api_key: str = None, verif
                                 "common_names": common_names,
                                 "score": score,
                                 "family": species.get('family', {}).get('scientificNameWithoutAuthor'),
+
                                 "genus": species.get('genus', {}).get('scientificNameWithoutAuthor'),
                                 "raw_res": best
                             }
