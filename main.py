@@ -316,8 +316,8 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
             score = max(score, 3) # Force diseased
         
         if is_healthy_hint:
-            if lap_var > 0.15 or necrosis_ratio > 0.05: score = 2
-            else: score = 1 
+            # Completely trust the dataset model if it says healthy
+            score = 1 
 
         # Binary Status Mapping
         status_label = "HEALTHY" if score <= 1 else "DISEASED"
@@ -336,7 +336,8 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
             f_score = max(f_score, 3)
             if base_severity == "high": f_score = max(f_score, 4)
         if is_healthy_hint:
-            f_score = 1 if lap_var < 0.1 else 2
+            # Completely trust the dataset model
+            f_score = 1
             
         # Binary Status Mapping
         status_label = "HEALTHY" if f_score <= 1 else "DISEASED"
