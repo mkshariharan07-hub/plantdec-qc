@@ -219,14 +219,15 @@ if "last_scan_id" not in st.session_state:
 def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint: bool = False, is_pathogen_hint: bool = False, base_severity: str = "low"):
     """Enhanced Risk Engine: Visual Reality + Quantum Entropy Analysis."""
     try:
-        # --- PHASE 1: VISUAL REALITY SCAN (Always active) ---
+        # PHASE 1: VISUAL REALITY SCAN (Always active) ---
         small = cv2.resize(img, (64, 64))
         hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV)
         gray = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
         gray_f = gray.astype(float) / 255.0
         
-        # Laplacian Variance (Texture Noise/Spots)
-        lap_var = cv2.Laplacian(gray, cv2.CV_64F).var() / 250.0 
+        # Apply slight blur to reduce false positives from leaf veins
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        lap_var = cv2.Laplacian(blurred, cv2.CV_64F).var() / 250.0 
         
         # Necrosis Detection (Brown/Black Lesion ratio)
         lower_brown = np.array([10, 20, 20])
@@ -651,7 +652,7 @@ with col_in:
                                 "Rose": ["rose", "rosa"],
                                 "Hibiscus": ["hibiscus"],
                                 "Peanut/Groundnut": ["peanut", "groundnut", "arachis"],
-                                "Guava": ["guava", "psidium"],
+                                "Guava": ["guava", "psidium", "cercospora", "rust"],
                                 "Papaya": ["papaya", "carica"],
                                 "Pomegranate": ["pomegranate", "punica"],
                                 "Ginger": ["ginger", "zingiber"],
