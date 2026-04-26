@@ -574,10 +574,15 @@ with st.sidebar:
             try:
                 import google.generativeai as genai
                 genai.configure(api_key=g_key)
-                model = genai.GenerativeModel('gemini-1.5-flash')
-                # Minimal test
+                # Try to list models to see what's available
+                available_models = [m.name for m in genai.list_models()]
+                if "models/gemini-1.5-flash" in available_models:
+                    model = genai.GenerativeModel('gemini-1.5-flash')
+                else:
+                    model = genai.GenerativeModel('gemini-pro-vision')
+                
                 model.generate_content("ping")
-                st.sidebar.success("Vision Core: STABLE")
+                st.sidebar.success(f"Vision Core: STABLE ({model.model_name})")
             except Exception as e:
                 st.sidebar.error(f"Vision Core Failed: {str(e)}")
 

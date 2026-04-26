@@ -821,7 +821,11 @@ def analyze_with_gemini(img_bgr: np.ndarray, api_key: str = None) -> dict:
 
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Fallback logic for regions where 1.5-flash is not 404-safe
+        try:
+            model = genai.GenerativeModel('gemini-1.5-flash')
+        except:
+            model = genai.GenerativeModel('gemini-pro-vision')
         
         # Convert BGR to RGB for Gemini
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
