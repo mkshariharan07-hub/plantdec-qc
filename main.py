@@ -566,6 +566,35 @@ with st.sidebar:
             except Exception as e:
                 st.sidebar.error(f"Uplink Failed: {e}")
 
+    if st.sidebar.button("📡 TEST VISION CORE (GEMINI)"):
+        g_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
+        if not g_key:
+            st.sidebar.error("Gemini Key Missing")
+        else:
+            try:
+                import google.generativeai as genai
+                genai.configure(api_key=g_key)
+                model = genai.GenerativeModel('gemini-1.5-flash')
+                # Minimal test
+                model.generate_content("ping")
+                st.sidebar.success("Vision Core: STABLE")
+            except Exception as e:
+                st.sidebar.error(f"Vision Core Failed: {str(e)}")
+
+    if st.sidebar.button("📡 TEST REMEDIATION CORE (GPT)"):
+        o_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
+        if not o_key:
+            st.sidebar.error("OpenAI Key Missing")
+        else:
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=o_key)
+                # Minimal test
+                client.models.list()
+                st.sidebar.success("Remediation Core: STABLE")
+            except Exception as e:
+                st.sidebar.error(f"Remediation Core Failed: {str(e)}")
+
 # ===============================
 # MAIN UI
 # ===============================
