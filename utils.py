@@ -639,8 +639,8 @@ def remap_disease_with_nyckel(text: str, function_id: str, client_id: str = None
         pass
     return text
 
-def identify_disease_with_huggingface(img_bgr: np.ndarray, api_key: str = None) -> dict:
-    """Identify plant diseases using a free Hugging Face Inference API model."""
+def identify_disease_with_huggingface(img_bgr: np.ndarray, api_key: str = None, verify_ssl: bool = False) -> dict:
+    """Identify plant diseases using a free Hugging Face Inference API model with retry logic."""
     if not api_key:
         api_key = os.getenv("HUGGINGFACE_API_KEY")
     
@@ -656,36 +656,42 @@ def identify_disease_with_huggingface(img_bgr: np.ndarray, api_key: str = None) 
         _, img_encoded = cv2.imencode(".jpg", img_bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
         img_bytes = img_encoded.tobytes()
 
-        # Send to Hugging Face
-        response = requests.post(API_URL, headers=headers, data=img_bytes, timeout=30)
+        # Send to Hugging Face with Retry Loop (for 'Waking Up' models)
+        import time
+        for attempt in range(3):
+            response = requests.post(API_URL, headers=headers, data=img_bytes, timeout=30, verify=verify_ssl)
+            
+            if response.status_code == 200:
+                results = response.json()
+                if results and isinstance(results, list):
+                    best = results[0]
+                    label = best.get("label", "Unknown")
+                    score = round(best.get("score", 0) * 100, 1)
+                    try:
+                        if "___" in label:
+                            plant_name, disease_name = label.split("___")
+                            disease_name = disease_name.replace("_", " ").title()
+                            plant_name = plant_name.replace("_", " ").title()
+                        else:
+                            plant_name, disease_name = "Specimen", label.replace("_", " ").title()
+                    except:
+                        plant_name, disease_name = "Specimen", label
+                    if "healthy" in disease_name.lower():
+                        disease_name = "Healthy Specimen"
+                    return {
+                        "disease": disease_name, "plant": plant_name, "probability": score,
+                        "description": f"Diagnosis via Hugging Face Neural Mesh (Sartaj-V5). Model Confidence: {score}%.",
+                        "source": "Hugging Face"
+                    }
+            elif response.status_code == 503:
+                # Model is loading - wait and retry
+                time.sleep(10)
+                continue
+            elif response.status_code == 401:
+                return {"error": "Hugging Face Token Rejected (401). Please check your Read permissions."}
+            else:
+                return {"error": f"Hugging Face API Error {response.status_code}: {response.text[:100]}"}
         
-        if response.status_code == 200:
-            results = response.json()
-            if results and isinstance(results, list):
-                best = results[0]
-                label = best.get("label", "Unknown")
-                score = round(best.get("score", 0) * 100, 1)
-                try:
-                    if "___" in label:
-                        plant_name, disease_name = label.split("___")
-                        disease_name = disease_name.replace("_", " ").title()
-                        plant_name = plant_name.replace("_", " ").title()
-                    else:
-                        plant_name, disease_name = "Specimen", label.replace("_", " ").title()
-                except:
-                    plant_name, disease_name = "Specimen", label
-                if "healthy" in disease_name.lower():
-                    disease_name = "Healthy Specimen"
-                return {
-                    "disease": disease_name, "plant": plant_name, "probability": score,
-                    "description": f"Diagnosis via Hugging Face Neural Mesh (Sartaj-V5). Model Confidence: {score}%.",
-                    "source": "Hugging Face"
-                }
-        elif response.status_code == 503:
-            return {"error": "Hugging Face Model is 'Waking Up'. Please wait 20 seconds and retry."}
-        elif response.status_code == 401:
-            return {"error": "Hugging Face Token Rejected (401). Please check your Read permissions."}
-        else:
-            return {"error": f"Hugging Face API Error {response.status_code}: {response.text[:100]}"}
+        return {"error": "Hugging Face Model timed out while waking up. Please try again in 30 seconds."}
     except Exception as e:
         return {"error": f"Hugging Face Linkage Failure: {str(e)}"}

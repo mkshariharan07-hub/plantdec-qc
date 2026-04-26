@@ -753,7 +753,7 @@ with col_in:
                         kw = {"error": "initialization"}
                         
                         if primary_engine == "Hugging Face (Free)":
-                            kw = identify_disease_with_huggingface(frame, api_key=keys.get("HUGGINGFACE"))
+                            kw = identify_disease_with_huggingface(frame, api_key=keys.get("HUGGINGFACE"), verify_ssl=ssl_verify)
                         elif primary_engine == "Kindwise (Paid)":
                             kw = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
                         elif primary_engine == "Pl@ntNet":
@@ -763,7 +763,7 @@ with col_in:
                         if "error" in kw or not kw.get('disease'):
                             if primary_engine != "Hugging Face (Free)":
                                 status.write("Primary engine restricted. Switching to Hugging Face AI (Free)...")
-                                hf_res = identify_disease_with_huggingface(frame, api_key=keys.get("HUGGINGFACE"))
+                                hf_res = identify_disease_with_huggingface(frame, api_key=keys.get("HUGGINGFACE"), verify_ssl=ssl_verify)
                                 if "error" not in hf_res: kw = hf_res
                                 
                             if ("error" in kw or not kw.get('disease')) and primary_engine != "Kindwise (Paid)":
