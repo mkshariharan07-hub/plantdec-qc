@@ -252,24 +252,37 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
             q_score = 1 if is_healthy_hint else 2
             q_data = {"label": "Visual Matrix", "backend": "edge-ai", "depth": 0, "prob": {"0000": 1.0}, "entanglement": 0.0, "circuit_str": "Direct Neural Inference"}
         else:
-            # 8-Qubit Zenith Protocol
-            entropy = -np.sum(gray_f * np.log2(gray_f + 1e-7)) / 4096.0
-            r_m, g_m, b_m = np.mean(small[:,:,2])/255.0, np.mean(small[:,:,1])/255.0, np.mean(small[:,:,0])/255.0
-            features = [entropy, r_m, g_m, necrosis_ratio, np.std(gray_f)*5.0, lap_var, chlorosis_factor, np.var(gray_f)*10]
-            
+            # 8-Qubit Zenith Protocol (Phase-Encoded Matrix)
             n_qubits = 8
             qr, cr = QuantumRegister(n_qubits, 'q'), ClassicalRegister(n_qubits, 'c')
             qc = QuantumCircuit(qr, cr)
-            for i, val in enumerate(features): qc.ry(abs(val) * math.pi * 2, qr[i])
+            
+            # 1. Quantum Feature Map (Amplitude + Phase)
+            for i, val in enumerate(features): 
+                qc.ry(abs(val) * math.pi, qr[i]) # Amplitude encoding
+                qc.p(val * math.pi / 2, qr[i])   # Phase encoding
+                
+            # 2. Pathogen Entropy Injection (Interference layer)
             if is_pathogen_hint:
+                qc.barrier()
                 for i in range(n_qubits): 
-                    qc.rx(math.pi/3, qr[i])
+                    qc.rx(math.pi/4, qr[i])
                     qc.h(qr[i])
-            for i in range(n_qubits): qc.cx(qr[i], qr[(i+1) % n_qubits])
-            for i in range(n_qubits): qc.h(qr[i])
+            
+            # 3. Hardware-Efficient Entanglement (Ring loop)
+            qc.barrier()
+            for i in range(n_qubits - 1):
+                qc.cx(qr[i], qr[i+1])
+            qc.cx(qr[n_qubits-1], qr[0])
+            
+            # 4. Superposition Collapse Prep
+            for i in range(n_qubits):
+                qc.ry(math.pi/4, qr[i])
+                qc.h(qr[i])
+                
             qc.measure(qr, cr)
 
-            # Execution
+            # Execution Logic
             try:
                 TOKEN = os.getenv("IBM_QUANTUM_TOKEN", "")
                 if TOKEN and len(TOKEN) > 10:
@@ -283,7 +296,7 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
             except:
                 from qiskit.primitives import StatevectorSampler
                 counts = StatevectorSampler().run([qc]).result()[0].data.c.get_counts()
-                backend_name = "q-sim-edge"
+                backend_name = "q-sim-zenith-v5"
 
             dom_state = max(counts, key=counts.get)
             if isinstance(dom_state, int): dom_state = format(dom_state, f'0{n_qubits}b')
