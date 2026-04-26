@@ -206,9 +206,11 @@ if "last_scan_id" not in st.session_state:
 # ===============================
 # QUANTUM SEVERITY PROBABILISTIC
 # ===============================
-def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint: bool = False, is_pathogen_hint: bool = False):
+def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint: bool = False, is_pathogen_hint: bool = False, base_severity: str = "low"):
     if not HAS_QUANTUM:
-        return {"score": 3, "label": "Simulated Matrix", "prob": {"00000000": 0.5}, "backend": "sim", "entanglement": 0.5, "depth": 0, "gates": {}, "circuit_str": "No Qiskit"}
+        # Default scores based on severity hint if quantum is missing
+        s = 1 if is_healthy_hint else 3 if base_severity == "medium" else 4 if base_severity == "high" else 2
+        return {"score": s, "label": "Simulated Matrix", "prob": {"00000000": 0.5}, "backend": "sim", "entanglement": 0.5, "depth": 0, "gates": {}, "circuit_str": "No Qiskit"}
         
     try:
         small = cv2.resize(img, (64, 64))
@@ -311,11 +313,22 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
         # BIOLOGICAL OVERRIDES
         if is_pathogen_hint:
             # If a pathogen is definitely found, the risk is at least Severe (4) if spots are seen, else Moderate (3)
-            min_risk = 4 if (lap_var > 0.08 or necrosis_ratio > 0.03) else 3
+            # Escalation based on base_severity from knowledge base
+            min_risk = 3
+            if base_severity == "medium": min_risk = 3
+            if base_severity == "high": min_risk = 4
+            
+            # Further escalation if visual evidence is strong
+            if lap_var > 0.08 or necrosis_ratio > 0.03:
+                min_risk = max(min_risk, 4)
+            
             score = max(score, min_risk)
         
-        if is_healthy_hint and not (lap_var > 0.15 or necrosis_ratio > 0.05):
-            score = min(score, 2)
+        if is_healthy_hint:
+            if lap_var > 0.15 or necrosis_ratio > 0.05:
+                score = 2 # Incipient if spots seen but AI says healthy
+            else:
+                score = 1 # Optimal
             
         labels = ["Optimal", "Incipient", "Moderate", "Severe", "Critical"]
         return {
@@ -742,7 +755,13 @@ with col_in:
                         status.write("Quantum state entanglement check...")
                         is_h_hint = "healthy" in str(kw.get('disease', '')).lower()
                         is_p_hint = not is_h_hint and "indeterminate" not in str(kw.get('disease', '')).lower()
-                        q = analyze_severity_quantum(frame, "Simulator Only" if q_eng == "Simulator Optimized" else "Dynamic", is_healthy_hint=is_h_hint, is_pathogen_hint=is_p_hint)
+                        
+                        # Fetch base severity from knowledge matrix
+                        d_info = get_disease_info(kw.get('disease', 'healthy'))
+                        q = analyze_severity_quantum(frame, "Simulator Only" if q_eng == "Simulator Optimized" else "Dynamic", 
+                                                    is_healthy_hint=is_h_hint, 
+                                                    is_pathogen_hint=is_p_hint,
+                                                    base_severity=d_info.get('severity', 'low'))
                         
                         # 4. Care Info
                         plant_key = pn.get('scientific_name', 'Unknown Specimen')
@@ -800,8 +819,20 @@ with col_in:
                             for _ in range(5)
                         ]
                         
+                        # Logic-based Risk Matrix (Replacing Random)
+                        d_name_l = kw.get('disease', '').lower()
+                        rm = {"Fungal": random.randint(5, 15), "Viral": random.randint(2, 8), "Bacterial": random.randint(5, 12), "Nutrient": random.randint(10, 25)}
+                        if "fungal" in d_name_l or "blight" in d_name_l or "mold" in d_name_l or "rust" in d_name_l or "mildew" in d_name_l:
+                            rm["Fungal"] = random.randint(75, 98)
+                        elif "viral" in d_name_l or "virus" in d_name_l or "mosaic" in d_name_l:
+                            rm["Viral"] = random.randint(70, 95)
+                        elif "bacterial" in d_name_l or "bacteria" in d_name_l:
+                            rm["Bacterial"] = random.randint(70, 95)
+                        elif "nutrient" in d_name_l or "deficiency" in d_name_l or "chlorosis" in d_name_l:
+                            rm["Nutrient"] = random.randint(60, 90)
+
                         res.update({
-                            "risk_matrix": {"Fungal": random.randint(10, 90), "Viral": random.randint(5, 40), "Bacterial": random.randint(10, 60), "Nutrient": random.randint(20, 80)},
+                            "risk_matrix": rm,
                             "timeline": {"Immediate": list(raw_rx.values())[0], "Day 7": "Re-evaluation of spectral load.", "Day 14": "Microbiome stabilization."}
                         })
 
@@ -852,7 +883,7 @@ CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon',
 <div style="display:flex; justify-content:center; align-items:center; background: rgba(0,0,0,0.2); padding: 12px 18px; border-radius: 14px; border: 1px solid rgba(16,185,129,0.1);">
 <div style="text-align:center;">
 <p class="metric-title" style="font-size: 0.65rem; margin-bottom: 5px;">Specimen Risk Level</p>
-<span class="badge badge-{'critical' if r.get('q', {}).get('score', 3) > 3 else 'warning' if r.get('q', {}).get('score', 3) > 2 else 'optimal'}" style="font-size: 1.2rem; padding: 10px 25px; box-shadow: 0 0 30px rgba(16,185,129,0.3);">
+<span class="badge badge-{'critical' if r.get('q', {}).get('score', 3) > 3 else 'warning' if r.get('q', {}).get('score', 3) >= 2 else 'optimal'}" style="font-size: 1.2rem; padding: 10px 25px; box-shadow: 0 0 30px rgba(16,185,129,0.3);">
 {f"{r.get('q', {}).get('label', 'Baseline').upper()} RISK" if not is_unknown else "SYNCING..."}
 </span>
 </div>
