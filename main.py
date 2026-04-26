@@ -380,9 +380,16 @@ with st.sidebar:
         if pn_k: keys["PLANTNET"] = pn_k
         if kw_k: keys["KINDWISE"] = kw_k
     
+    # TFLite Path Configuration
+    TFLITE_MODEL_PATH = os.path.join(os.path.dirname(__file__), "model file", "model_float16_quant.tflite")
+    TFLITE_JSON_PATH = os.path.join(os.path.dirname(__file__), "model file", "class_indices.json")
+    HAS_LOCAL_TFLITE = os.path.exists(TFLITE_MODEL_PATH)
+
     with st.expander("🛠 Matrix Configuration", expanded=False):
         q_eng = st.selectbox("Quantum Engine", ["Dynamic (Hybrid)", "Simulator Optimized"])
-        primary_engine = st.selectbox("Primary Disease Engine", ["Hugging Face (Free)", "Kindwise (Paid)", "Pl@ntNet", "Local Mesh"], index=0)
+        primary_engine = st.selectbox("Primary Disease Engine", 
+                                    ["Hugging Face (Free)", "Kindwise (Paid)", "Local TFLite (Ultra Fast)", "Pl@ntNet", "Local Mesh"], 
+                                    index=0)
         api_depth = st.slider("Discovery Depth", 1, 10, 7)
         hard_guess = st.toggle("Hard-Guess Mode", value=True)
         ssl_verify = st.toggle("Verify SSL Certificates", value=False, help="Disable if encountering SSL/Proxy errors on Windows")
@@ -760,6 +767,9 @@ with col_in:
                             kw = identify_disease_with_huggingface(frame, api_key=keys.get("HUGGINGFACE"), verify_ssl=ssl_verify)
                         elif active_engine == "Kindwise (Paid)":
                             kw = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
+                        elif active_engine == "Local TFLite (Ultra Fast)":
+                            from utils import predict_with_tflite
+                            kw = predict_with_tflite(frame, TFLITE_MODEL_PATH, TFLITE_JSON_PATH)
                         elif active_engine == "Pl@ntNet":
                             kw = identify_disease_with_plantnet(frame, api_key=keys.get("PLANTNET"))
                         
