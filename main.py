@@ -320,6 +320,15 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
         
         score = max(q_score, v_score)
         
+        # VISUAL REALITY OVERRIDE (Safety against Quantum False Positives)
+        # If the image is extremely smooth (low laplacian) and has no necrosis, 
+        # we cap the risk at 'Incipient' (2) regardless of quantum noise.
+        if lap_var < 0.04 and necrosis_ratio < 0.002:
+            score = min(score, 2)
+            # If extremely smooth and green, it's Optimal
+            if lap_var < 0.02:
+                score = 1
+        
         # BIOLOGICAL OVERRIDES
         if is_pathogen_hint:
             # If a pathogen is definitely found, the risk is at least Severe (4) if spots are seen, else Moderate (3)
@@ -785,8 +794,8 @@ with col_in:
                                     if botanical_name:
                                         p_ai_disease = botanical_name
                                     else:
-                                        # Fallback to generic if no match
-                                        p_ai_disease = f"Pathogen Detected: {actual_plant} variant"
+                                        # Fallback to indeterminate if no match (Lower risk default)
+                                        p_ai_disease = f"Indeterminate {actual_plant} Specimen"
 
                             kw = {
                                 "disease": p_ai_disease,
