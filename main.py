@@ -532,16 +532,19 @@ with st.sidebar:
             st.sidebar.error("Key Missing/Invalid")
         else:
             try:
-                # Test with a simple model info request
-                test_url = "https://api-inference.huggingface.co/models/Sartaj/plant-disease-classification"
+                # Test with official whoami endpoint
+                test_url = "https://huggingface.co/api/whoami-v2"
                 headers = {"Authorization": f"Bearer {hf_key}"}
-                test_res = requests.get(test_url, headers=headers, timeout=10)
+                test_res = requests.get(test_url, headers=headers, timeout=10, verify=ssl_verify)
+                
                 if test_res.status_code == 200:
-                    st.sidebar.success("Hugging Face Matrix: ONLINE")
+                    user_data = test_res.json()
+                    user_name = user_data.get("name", "Unknown")
+                    st.sidebar.success(f"Online: Connected as {user_name}")
                 else:
                     st.sidebar.error(f"Rejected: HTTP {test_res.status_code}")
             except Exception as e:
-                st.sidebar.error(f"Uplink Failed: {e}")
+                st.sidebar.error(f"Link Failure: {str(e)}")
 
     if st.sidebar.button("📡 PING CLOUD HEARTBEAT"):
         try:
