@@ -24,6 +24,89 @@ import base64
 from typing import Optional, Dict
 from dotenv import load_dotenv
 
+# Optional Deep Learning Imports
+try:
+    # Attempt to import TFLite
+    import tensorflow.lite as tflite
+    HAS_TFLITE = True
+except ImportError:
+    try:
+        import tflite_runtime.interpreter as tflite
+        HAS_TFLITE = True
+    except ImportError:
+        HAS_TFLITE = False
+
+def predict_with_tflite(img_bgr: np.ndarray, model_path: str, class_indices_path: str) -> dict:
+    """Perform inference using a TFLite model and map results to class names."""
+    if not HAS_TFLITE:
+        return {"error": "TFLite runtime not found. Please install tensorflow or tflite-runtime."}
+    
+    if not os.path.exists(model_path):
+        return {"error": f"Model file not found at {model_path}"}
+
+    try:
+        # Load Interpreter
+        import tensorflow.lite as tflite
+        interpreter = tflite.Interpreter(model_path=model_path)
+        interpreter.allocate_tensors()
+        
+        input_details = interpreter.get_input_details()
+        output_details = interpreter.get_output_details()
+        
+        # Preprocess Image
+        # Get required input shape (usually 224x224 or 256x256)
+        input_shape = input_details[0]['shape']
+        h, w = input_shape[1], input_shape[2]
+        
+        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+        resized = cv2.resize(img_rgb, (w, h))
+        input_data = np.expand_dims(resized, axis=0).astype(np.float32)
+        
+        # Normalize if necessary (assuming 0-255 -> 0-1)
+        if input_details[0]['dtype'] == np.float32:
+            input_data = input_data / 255.0
+            
+        # Set Tensor
+        interpreter.set_tensor(input_details[0]['index'], input_data)
+        interpreter.invoke()
+        
+        # Get Result
+        output_data = interpreter.get_tensor(output_details[0]['index'])[0]
+        best_idx = np.argmax(output_data)
+        confidence = float(output_data[best_idx])
+        
+        # Map Class
+        label = str(best_idx)
+        if os.path.exists(class_indices_path):
+            import json
+            with open(class_indices_path, 'r') as f:
+                indices = json.load(f)
+                # Reverse mapping (assuming index: name or name: index)
+                # Common format is {"className": index}
+                for name, idx in indices.items():
+                    if str(idx) == str(best_idx):
+                        label = name
+                        break
+        
+        # Parse label (e.g., 'Apple___Scab' -> 'Scab')
+        plant_name, disease_name = "Specimen", label
+        if "___" in label:
+            plant_name, disease_name = label.split("___")
+            disease_name = disease_name.replace("_", " ").title()
+            plant_name = plant_name.replace("_", " ").title()
+        else:
+            disease_name = label.replace("_", " ").title()
+
+        return {
+            "disease": disease_name,
+            "plant": plant_name,
+            "probability": round(confidence * 100, 1),
+            "description": f"Diagnosis via Edge-TFLite Neural Mesh. Model Confidence: {round(confidence*100,1)}%.",
+            "source": "TFLite Local"
+        }
+    except Exception as e:
+        return {"error": f"TFLite Inference Failure: {str(e)}"}
+
 load_dotenv()
 
 # ── API Keys ──────────────────────────────────────────────────────────────────
