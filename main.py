@@ -320,8 +320,12 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
             score = max(score, min_risk)
         
         if is_healthy_hint:
-            if lap_var > 0.15 or necrosis_ratio > 0.05: score = max(score, 2)
-            else: score = 1 
+            # AI says it's healthy. If we see major necrosis, we might move to Incipient (2).
+            # Otherwise, we force it to Optimal (1).
+            if necrosis_ratio > 0.04 or lap_var > 0.25:
+                score = 2 # Incipient (Minor physical damage/spots)
+            else:
+                score = 1 # Optimal (Healthy)
 
         labels = ["Optimal", "Incipient", "Moderate", "Severe", "Critical"]
         q_data.update({"score": score, "label": labels[min(4, score-1)]})
@@ -738,31 +742,39 @@ with col_in:
                         
                         # 3. Pathogen Phase
                         status.write(f"Engaging Primary Engine: {primary_engine}...")
+                        
+                        # INTELLIGENT ENGINE SWITCHER (Optimization for Tropical Species)
+                        target_species = str(pn.get('scientific_name', '')).lower()
+                        tropical_species = ["psidium", "mangifera", "guava", "mango", "hibiscus", "aloe", "papaya"]
+                        
+                        # If tropical species detected but primary is HF (which lacks tropical data), switch to Kindwise if available
+                        active_engine = primary_engine
+                        if any(s in target_species for s in tropical_species) and primary_engine == "Hugging Face (Free)":
+                            if keys.get("KINDWISE"):
+                                status.write("✨ Species Optimization: Switching to Kindwise Tropical Engine...")
+                                active_engine = "Kindwise (Paid)"
+                        
                         kw = {"error": "initialization"}
                         
-                        if primary_engine == "Hugging Face (Free)":
+                        if active_engine == "Hugging Face (Free)":
                             kw = identify_disease_with_huggingface(frame, api_key=keys.get("HUGGINGFACE"), verify_ssl=ssl_verify)
-                        elif primary_engine == "Kindwise (Paid)":
+                        elif active_engine == "Kindwise (Paid)":
                             kw = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
-                        elif primary_engine == "Pl@ntNet":
+                        elif active_engine == "Pl@ntNet":
                             kw = identify_disease_with_plantnet(frame, api_key=keys.get("PLANTNET"))
                         
                         # MULTI-CLOUD PATHOGEN FALLBACK (Logic-based fallback chain)
                         if "error" in kw or not kw.get('disease'):
-                            if primary_engine != "Hugging Face (Free)":
-                                status.write("Primary engine restricted. Switching to Hugging Face AI (Free)...")
-                                hf_res = identify_disease_with_huggingface(frame, api_key=keys.get("HUGGINGFACE"), verify_ssl=ssl_verify)
-                                if "error" not in hf_res: kw = hf_res
-                                
-                            if ("error" in kw or not kw.get('disease')) and primary_engine != "Kindwise (Paid)":
+                            # If primary/optimized engine fails, try the others in order
+                            if active_engine != "Kindwise (Paid)" and keys.get("KINDWISE"):
                                 status.write("Attempting Kindwise Matrix...")
                                 kw_res = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
                                 if "error" not in kw_res: kw = kw_res
                                 
-                            if ("error" in kw or not kw.get('disease')) and primary_engine != "Pl@ntNet":
-                                status.write("Attempting Pl@ntNet Disease Uplink...")
-                                pn_res = identify_disease_with_plantnet(frame, api_key=keys.get("PLANTNET"))
-                                if "error" not in pn_res: kw = pn_res
+                            if ("error" in kw or not kw.get('disease')) and active_engine != "Hugging Face (Free)":
+                                status.write("Switching to Hugging Face AI...")
+                                hf_res = identify_disease_with_huggingface(frame, api_key=keys.get("HUGGINGFACE"), verify_ssl=ssl_verify)
+                                if "error" not in hf_res: kw = hf_res
                         
                         # PATHOGEN AI FALLBACK (Local Mesh)
                         if ("error" in kw or not kw.get('disease')) and HAS_LOCAL_MODEL:

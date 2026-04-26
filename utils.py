@@ -261,6 +261,30 @@ DISEASE_INFO: Dict[str, Dict] = {
         "emoji":    "🔴",
         "tips":     "Prune infected branches. Use resistant cultivars. Apply protective fungicides preventatively.",
     },
+    "mango_malformation": {
+        "severity": "critical",
+        "color":    "#b91c1c",
+        "emoji":    "💀",
+        "tips":     "Prune infected panicles 30cm below symptoms. Disinfect tools. Destroy infected material.",
+    },
+    "anthracnose": {
+        "severity": "high",
+        "color":    "#ef4444",
+        "emoji":    "🔴",
+        "tips":     "Apply copper-based fungicides. Prune dead wood. Improve air circulation.",
+    },
+    "guava_rust": {
+        "severity": "high",
+        "color":    "#ef4444",
+        "emoji":    "🔴",
+        "tips":     "Apply neem oil or sulfur. Remove infected leaves. Avoid overhead irrigation.",
+    },
+    "cercospora": {
+        "severity": "medium",
+        "color":    "#f97316",
+        "emoji":    "🟠",
+        "tips":     "Remove fallen leaves. Apply balanced NPK. Use protective fungicides if spreading.",
+    }
 }
 
 # BOTANICAL CROSS-REFERENCE MATRIX
