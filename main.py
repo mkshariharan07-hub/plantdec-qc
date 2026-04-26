@@ -857,8 +857,14 @@ with col_in:
                         
                         # 4. Care Info
                         plant_key = pn.get('scientific_name', 'Unknown Specimen')
+                        # Allow Vision AI to override plant ID if PlantNet is uncertain
+                        if "Vision AI" in str(kw.get('source')) and kw.get('plant') and kw.get('plant') != "Unknown":
+                             plant_key = kw.get('plant')
+                             
                         c_names = pn.get('common_names', [])
                         c_name = c_names[0] if c_names else plant_key
+                        if "Vision AI" in str(kw.get('source')) and kw.get('plant') and kw.get('plant') != "Unknown":
+                            c_name = kw.get('plant')
                         status.write(f"Retrieving care protocols for {c_name}...")
                         care = get_perenual_care_info(c_name)
 
@@ -980,12 +986,13 @@ ID: {r.get('timestamp', 'NEW')} | Uplink: STABLE<br/>
 CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon', 0)}kg/yr</span>
 </p>
 
-<div style="display:flex; justify-content:center; align-items:center; background: rgba(0,0,0,0.2); padding: 12px 18px; border-radius: 14px; border: 1px solid rgba(16,185,129,0.1);">
+<div style="display:flex; flex-direction:column; justify-content:center; align-items:center; background: rgba(0,0,0,0.2); padding: 15px 18px; border-radius: 14px; border: 1px solid rgba(16,185,129,0.1);">
 <div style="text-align:center;">
 <p class="metric-title" style="font-size: 0.65rem; margin-bottom: 5px;">Specimen Status</p>
 <span class="badge badge-{'optimal' if r.get('q', {}).get('label') == 'HEALTHY' else 'critical'}" style="font-size: 1.5rem; padding: 12px 35px; box-shadow: 0 0 30px rgba(16,185,129,0.3) if r.get('q', {{}}).get('label') == 'HEALTHY' else 0 0 30px rgba(239,68,68,0.3); letter-spacing: 2px; font-weight: 900;">
 {r.get('q', {}).get('label', 'INDETERMINATE')}
 </span>
+{f"<p style='color:#f87171; font-weight:700; margin-top:15px; font-size:1.1rem; text-transform:uppercase;'>{p_status}</p>" if r.get('q', {}).get('label') != 'HEALTHY' else ""}
 </div>
 </div>
 
