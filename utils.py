@@ -23,6 +23,9 @@ import requests
 import base64
 from typing import Optional, Dict
 from dotenv import load_dotenv
+import google.generativeai as genai
+from openai import OpenAI
+import streamlit as st
 
 # Optional Deep Learning Imports
 try:
@@ -798,10 +801,81 @@ def identify_disease_with_huggingface(img_bgr: np.ndarray, api_key: str = None, 
                 time.sleep(10)
                 continue
             elif response.status_code == 401:
-                return {"error": "Hugging Face Token Rejected (401). Please check your Read permissions."}
+                return {"error": "Hugging Face: Unauthorized (Invalid Key)"}
             else:
-                return {"error": f"Hugging Face API Error {response.status_code}: {response.text[:100]}"}
+                return {"error": f"Hugging Face Rejected: HTTP {response.status_code}"}
         
-        return {"error": "Hugging Face Model timed out while waking up. Please try again in 30 seconds."}
+        return {"error": "Hugging Face: Model failed to wake up after multiple attempts."}
     except Exception as e:
-        return {"error": f"Hugging Face Linkage Failure: {str(e)}"}
+        return {"error": f"Hugging Face Root Failure: {str(e)}"}
+
+# ── Gemini & ChatGPT Zenith Integrations ──────────────────────────────────────
+
+def analyze_with_gemini(img_bgr: np.ndarray, api_key: str = None) -> dict:
+    """Identify plant and disease using Google Gemini Flash."""
+    if not api_key:
+        api_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
+    
+    if not api_key:
+        return {"error": "Gemini API Key missing"}
+
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        # Convert BGR to RGB for Gemini
+        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+        _, img_encoded = cv2.imencode(".jpg", img_rgb)
+        
+        prompt = """
+        You are a professional agronomist. Analyze this plant image.
+        Return ONLY a JSON object with these keys:
+        - "plant": The common name of the plant.
+        - "disease": The specific disease name or "Healthy".
+        - "confidence": A number from 0-100.
+        - "description": A brief 1-sentence summary.
+        """
+        
+        response = model.generate_content([
+            prompt,
+            {"mime_type": "image/jpeg", "data": img_encoded.tobytes()}
+        ])
+        
+        # Clean JSON response
+        text = response.text.replace("```json", "").replace("```", "").strip()
+        import json
+        res = json.loads(text)
+        
+        return {
+            "disease": res.get("disease", "Unknown"),
+            "plant": res.get("plant", "Unknown"),
+            "probability": res.get("confidence", 0),
+            "description": res.get("description", "Analyzed via Gemini Vision."),
+            "source": "Gemini Flash"
+        }
+    except Exception as e:
+        return {"error": f"Gemini Integration Failure: {str(e)}"}
+
+def get_chatgpt_advice(plant: str, disease: str, api_key: str = None) -> str:
+    """Get professional treatment advice from ChatGPT."""
+    if not api_key:
+        api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
+    
+    if not api_key:
+        return "ChatGPT Treatment Advice: API Key missing."
+
+    try:
+        client = OpenAI(api_key=api_key)
+        
+        prompt = f"As a botanical expert, provide a concise treatment plan for a {plant} suffering from {disease}. Include 3 actionable steps and 1 organic prevention tip. Keep it under 150 words."
+        
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=300
+        )
+        
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"ChatGPT Treatment Advice Failure: {str(e)}"
+

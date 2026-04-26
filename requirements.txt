@@ -11,3 +11,5 @@ qiskit-ibm-runtime
 scikit-learn
 tensorflow-cpu
 tflite-runtime
+google-generativeai
+openai

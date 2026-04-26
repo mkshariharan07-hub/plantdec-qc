@@ -59,7 +59,9 @@ from utils import (
     load_model_and_scaler, 
     remap_disease_with_nyckel, 
     get_botanical_equivalent,
-    identify_disease_with_huggingface
+    identify_disease_with_huggingface,
+    analyze_with_gemini,
+    get_chatgpt_advice
 )
 
 load_dotenv()
@@ -383,8 +385,9 @@ with st.sidebar:
     with st.expander("🛠 Matrix Configuration", expanded=False):
         q_eng = st.selectbox("Quantum Engine", ["Dynamic (Hybrid)", "Simulator Optimized"])
         primary_engine = st.selectbox("Primary Disease Engine", 
-                                    ["Hugging Face (Free)", "Kindwise (Paid)", "Local TFLite (Ultra Fast)", "Pl@ntNet", "Local Mesh"], 
+                                    ["Hugging Face (Free)", "Gemini Pro Vision (Fast)", "Kindwise (Paid)", "Local TFLite (Ultra Fast)", "Pl@ntNet", "Local Mesh"], 
                                     index=0)
+        use_chatgpt = st.toggle("Enable ChatGPT Treatment Advice", value=True)
         api_depth = st.slider("Discovery Depth", 1, 10, 7)
         hard_guess = st.toggle("Hard-Guess Mode", value=True)
         ssl_verify = st.toggle("Verify SSL Certificates", value=False, help="Disable if encountering SSL/Proxy errors on Windows")
@@ -771,6 +774,8 @@ with col_in:
                         
                         if active_engine == "Hugging Face (Free)":
                             kw = identify_disease_with_huggingface(frame, api_key=keys.get("HUGGINGFACE"), verify_ssl=ssl_verify)
+                        elif active_engine == "Gemini Pro Vision (Fast)":
+                            kw = analyze_with_gemini(frame, api_key=os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY"))
                         elif active_engine == "Kindwise (Paid)":
                             kw = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
                         elif active_engine == "Local TFLite (Ultra Fast)":
@@ -931,6 +936,14 @@ with col_in:
                         ch, cw = h//2, w//2
                         res["micro_img"] = frame[max(0, ch-128):min(h, ch+128), max(0, cw-128):min(w, cw+128)]
 
+                        # 6. ChatGPT Professional Insights
+                        if use_chatgpt and "healthy" not in d_name.lower():
+                            status.write("Consulting ChatGPT Botanical Expert...")
+                            gpt_advice = get_chatgpt_advice(c_name, d_name)
+                            res["gpt_advice"] = gpt_advice
+                        else:
+                            res["gpt_advice"] = None
+
                         st.session_state.last_results = res
                         st.session_state.specimen_history.append({"name": plant_key, "status": res['disease'], "time": res['timestamp']})
                         status.update(label="Zenith Diagnosis Full-Locked.", state="complete")
@@ -993,6 +1006,16 @@ CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon',
                     Remediation Gain: +${int(r.get('roi', 500) * 0.85)} USD
                 </div>
                 """, unsafe_allow_html=True)
+                
+                if r.get('gpt_advice'):
+                    st.markdown(f"""
+                    <div style='background:rgba(16,185,129,0.1); padding:20px; border-radius:15px; border:1px solid #10b981; margin-top:15px;'>
+                        <h4 style='color:#34d399; margin-top:0;'>🤖 AI Expert Treatment Plan</h4>
+                        <div style='color:#ecfdf5; font-size:0.95rem; line-height:1.6;'>
+                            {r.get('gpt_advice')}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
                 
                 if r.get('rx'):
                     st.markdown("<h4 style='color:#6ee7b7;'>Remediation Directives</h4>", unsafe_allow_html=True)
