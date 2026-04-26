@@ -368,6 +368,7 @@ with st.sidebar:
         "NEURAL_MESH": os.getenv("HUGGINGFACE_API_KEY") or (st.secrets.get("HUGGINGFACE_API_KEY") if "HUGGINGFACE_API_KEY" in st.secrets else None),
         "CARE_PROTOCOLS": os.getenv("PERENUAL_API_KEY") or (st.secrets.get("PERENUAL_API_KEY") if "PERENUAL_API_KEY" in st.secrets else None),
         "QUANTUM_ENGINE": os.getenv("IBM_QUANTUM_TOKEN") or (st.secrets.get("IBM_QUANTUM_TOKEN") if "IBM_QUANTUM_TOKEN" in st.secrets else None),
+        "VISUAL_ORACLE": os.getenv("SERPAPI_KEY") or (st.secrets.get("SERPAPI_KEY") if "SERPAPI_KEY" in st.secrets else None),
     }
 
     # API KEY ORCHESTRATION
@@ -388,6 +389,7 @@ with st.sidebar:
                                     ["Neural Mesh Alpha", "Vision Intelligence Core", "Premium Pathogen Matrix", "Local Edge AI", "Global Botanical Database", "Local Mesh"], 
                                     index=0)
         use_chatgpt = st.toggle("Enable Professional Remediation Insights", value=True)
+        use_lens = st.toggle("Enable Google Lens Cross-Verification", value=False)
         api_depth = st.slider("Discovery Depth", 1, 10, 7)
         hard_guess = st.toggle("Hard-Guess Mode", value=True)
         ssl_verify = st.toggle("Verify SSL Certificates", value=False, help="Disable if encountering SSL/Proxy errors on Windows")
@@ -779,6 +781,19 @@ with col_in:
                         st.session_state.last_results['local_score'] = local_res.get('confidence', 0) if 'local_res' in locals() else 0
                         st.session_state.last_results['host_score'] = 88.0 if inferred_plant else 0
                         st.session_state.last_results['score'] = pn.get('score', 0)
+
+                        # 2.5 Google Lens Cross-Verification
+                        if use_lens and keys.get("VISUAL_ORACLE"):
+                            status.write("Phase 2.5: Google Lens Cross-Verification...")
+                            lens_res = search_with_google_lens(frame, api_key=keys.get("VISUAL_ORACLE"))
+                            if "error" not in lens_res:
+                                status.write(f"🌐 Google Lens: {lens_res['plant']}")
+                                st.session_state.last_results['lens_match'] = lens_res
+                                # If PlantNet was weak, trust Google Lens for plant ID
+                                if is_weak or unstable:
+                                    pn['scientific_name'] = lens_res['plant']
+                                    pn['common_names'] = [lens_res['plant']]
+                                    st.session_state.last_results['plant'] = lens_res['plant']
                         
                         # 3. Pathogen Phase
                         status.write(f"Engaging Primary Engine: {primary_engine}...")

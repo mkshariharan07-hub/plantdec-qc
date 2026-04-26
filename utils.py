@@ -890,3 +890,43 @@ def get_chatgpt_advice(plant: str, disease: str, api_key: str = None) -> str:
     except Exception as e:
         return f"Professional Remediation Insights Failure: {str(e)}"
 
+def search_with_google_lens(img_bgr: np.ndarray, api_key: str = None) -> dict:
+    """Perform a Google Lens search via SerpAPI to cross-verify plant species."""
+    if not api_key:
+        api_key = os.getenv("SERPAPI_KEY") or st.secrets.get("SERPAPI_KEY")
+    
+    if not api_key:
+        return {"error": "SerpAPI Key Missing"}
+
+    try:
+        # Encode image to base64
+        _, buffer = cv2.imencode('.jpg', img_bgr)
+        
+        # SerpAPI Google Lens requires a URL or a file upload. 
+        url = "https://serpapi.com/search"
+        params = {
+            "engine": "google_lens",
+            "api_key": api_key
+        }
+        files = {
+            "file": ("specimen.jpg", buffer.tobytes(), "image/jpeg")
+        }
+        
+        response = requests.post(url, params=params, files=files, timeout=15)
+        data = response.json()
+        
+        # Extract visual matches
+        matches = data.get("visual_matches", [])
+        if matches:
+            top_match = matches[0]
+            return {
+                "plant": top_match.get("title", "Unknown"),
+                "source": "Google Lens (via SerpAPI)",
+                "link": top_match.get("link"),
+                "thumbnail": top_match.get("thumbnail"),
+                "matches": [m.get("title") for m in matches[:3]]
+            }
+        return {"error": "No visual matches found via Google Lens."}
+    except Exception as e:
+        return {"error": f"Google Lens Failure: {str(e)}"}
+
