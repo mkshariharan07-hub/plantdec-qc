@@ -50,7 +50,8 @@ except ImportError:
 # Core Utilities
 from utils import (decode_bytes_to_bgr, identify_plant_with_plantnet, identify_disease_with_kindwise, 
                   identify_disease_with_plantnet, get_perenual_care_info, get_disease_info, 
-                  predict_image, load_model_and_scaler, remap_disease_with_nyckel, get_botanical_equivalent)
+                  predict_image, load_model_and_scaler, remap_disease_with_nyckel, get_botanical_equivalent,
+                  identify_disease_with_huggingface)
 
 load_dotenv()
 
@@ -361,6 +362,7 @@ with st.sidebar:
     
     with st.expander("🛠 Matrix Configuration", expanded=False):
         q_eng = st.selectbox("Quantum Engine", ["Dynamic (Hybrid)", "Simulator Optimized"])
+        primary_engine = st.selectbox("Primary Disease Engine", ["Hugging Face (Free)", "Kindwise (Paid)", "Pl@ntNet", "Local Mesh"])
         api_depth = st.slider("Discovery Depth", 1, 10, 7)
         hard_guess = st.toggle("Hard-Guess Mode", value=True)
         ssl_verify = st.toggle("Verify SSL Certificates", value=False, help="Disable if encountering SSL/Proxy errors on Windows")
@@ -444,6 +446,7 @@ with st.sidebar:
     keys = {
         "PLANTNET": pn_k or os.getenv("PLANTNET_API_KEY") or (st.secrets.get("PLANTNET_API_KEY") if "PLANTNET_API_KEY" in st.secrets else None),
         "KINDWISE": kw_k or os.getenv("CROP_HEALTH_API_KEY") or (st.secrets.get("CROP_HEALTH_API_KEY") if "CROP_HEALTH_API_KEY" in st.secrets else None),
+        "HUGGINGFACE": os.getenv("HUGGINGFACE_API_KEY") or (st.secrets.get("HUGGINGFACE_API_KEY") if "HUGGINGFACE_API_KEY" in st.secrets else None),
         "PERENUAL": os.getenv("PERENUAL_API_KEY") or (st.secrets.get("PERENUAL_API_KEY") if "PERENUAL_API_KEY" in st.secrets else None),
         "IBM_QUANTUM": os.getenv("IBM_QUANTUM_TOKEN") or (st.secrets.get("IBM_QUANTUM_TOKEN") if "IBM_QUANTUM_TOKEN" in st.secrets else None),
         "NYCKEL_FID": st.session_state.get("nfid_over") or os.getenv("NYCKEL_FID"),
@@ -492,6 +495,23 @@ with st.sidebar:
                     st.sidebar.success(f"Link Stable (Ping: {len(test_res.json())} projects)")
                 else:
                     st.sidebar.error(f"Link Rejected: HTTP {test_res.status_code}")
+            except Exception as e:
+                st.sidebar.error(f"Uplink Failed: {e}")
+
+    if st.sidebar.button("📡 TEST HUGGINGFACE UPLINK"):
+        hf_key = keys.get("HUGGINGFACE")
+        if not hf_key or "your_token" in hf_key:
+            st.sidebar.error("Key Missing/Invalid")
+        else:
+            try:
+                # Test with a simple model info request
+                test_url = "https://api-inference.huggingface.co/models/Sartaj/plant-disease-classification"
+                headers = {"Authorization": f"Bearer {hf_key}"}
+                test_res = requests.get(test_url, headers=headers, timeout=10)
+                if test_res.status_code == 200:
+                    st.sidebar.success("Hugging Face Matrix: ONLINE")
+                else:
+                    st.sidebar.error(f"Rejected: HTTP {test_res.status_code}")
             except Exception as e:
                 st.sidebar.error(f"Uplink Failed: {e}")
 
@@ -698,12 +718,32 @@ with col_in:
                         st.session_state.last_results['score'] = pn.get('score', 0)
                         
                         # 3. Pathogen Phase
-                        kw = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
+                        status.write(f"Engaging Primary Engine: {primary_engine}...")
+                        kw = {"error": "initialization"}
                         
-                        # MULTI-CLOUD PATHOGEN FALLBACK (Kindwise -> Pl@ntNet -> Local)
-                        if "error" in kw:
-                            status.write("Kindwise Matrix restricted. Switching to Pl@ntNet Disease Uplink...")
+                        if primary_engine == "Hugging Face (Free)":
+                            kw = identify_disease_with_huggingface(frame, api_key=keys.get("HUGGINGFACE"))
+                        elif primary_engine == "Kindwise (Paid)":
+                            kw = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
+                        elif primary_engine == "Pl@ntNet":
                             kw = identify_disease_with_plantnet(frame, api_key=keys.get("PLANTNET"))
+                        
+                        # MULTI-CLOUD PATHOGEN FALLBACK (Logic-based fallback chain)
+                        if "error" in kw or not kw.get('disease'):
+                            if primary_engine != "Hugging Face (Free)":
+                                status.write("Primary engine restricted. Switching to Hugging Face AI (Free)...")
+                                hf_res = identify_disease_with_huggingface(frame, api_key=keys.get("HUGGINGFACE"))
+                                if "error" not in hf_res: kw = hf_res
+                                
+                            if ("error" in kw or not kw.get('disease')) and primary_engine != "Kindwise (Paid)":
+                                status.write("Attempting Kindwise Matrix...")
+                                kw_res = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
+                                if "error" not in kw_res: kw = kw_res
+                                
+                            if ("error" in kw or not kw.get('disease')) and primary_engine != "Pl@ntNet":
+                                status.write("Attempting Pl@ntNet Disease Uplink...")
+                                pn_res = identify_disease_with_plantnet(frame, api_key=keys.get("PLANTNET"))
+                                if "error" not in pn_res: kw = pn_res
                         
                         # PATHOGEN AI FALLBACK (Local Mesh)
                         if ("error" in kw or not kw.get('disease')) and HAS_LOCAL_MODEL:

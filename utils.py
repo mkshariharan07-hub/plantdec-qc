@@ -624,3 +624,59 @@ def remap_disease_with_nyckel(text: str, function_id: str, client_id: str = None
     except:
         pass
     return text
+
+def identify_disease_with_huggingface(img_bgr: np.ndarray, api_key: str = None) -> dict:
+    """Identify plant diseases using a free Hugging Face Inference API model."""
+    if not api_key:
+        api_key = os.getenv("HUGGINGFACE_API_KEY")
+    
+    if not api_key or "your_token" in api_key:
+        return {"error": "Hugging Face API Key missing. Please check your .env file."}
+
+    # Model: Sartaj/plant-disease-classification (Trained on PlantVillage)
+    API_URL = "https://api-inference.huggingface.co/models/Sartaj/plant-disease-classification"
+    headers = {"Authorization": f"Bearer {api_key}"}
+
+    try:
+        # Encode image to bytes
+        _, img_encoded = cv2.imencode(".jpg", img_bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
+        img_bytes = img_encoded.tobytes()
+
+        # Send to Hugging Face
+        response = requests.post(API_URL, headers=headers, data=img_bytes, timeout=20)
+        
+        if response.status_code == 200:
+            results = response.json()
+            if results and isinstance(results, list):
+                # Results are usually sorted by score
+                best = results[0]
+                label = best.get("label", "Unknown")
+                score = round(best.get("score", 0) * 100, 1)
+
+                # Parse label (usually 'Plant___Disease')
+                try:
+                    if "___" in label:
+                        plant_name, disease_name = label.split("___")
+                        disease_name = disease_name.replace("_", " ").title()
+                        plant_name = plant_name.replace("_", " ").title()
+                    else:
+                        plant_name, disease_name = "Specimen", label.replace("_", " ").title()
+                except:
+                    plant_name, disease_name = "Specimen", label
+
+                # Map 'Healthy' to a cleaner string
+                if "healthy" in disease_name.lower():
+                    disease_name = "Healthy Specimen"
+
+                return {
+                    "disease": disease_name,
+                    "plant": plant_name,
+                    "probability": score,
+                    "description": f"Diagnosis via Hugging Face Neural Mesh (Sartaj-V5). Model Confidence: {score}%.",
+                    "source": "Hugging Face"
+                }
+            return {"error": "Hugging Face: No diagnosis returned from model."}
+        else:
+            return {"error": f"Hugging Face API Rejected: HTTP {response.status_code} ({response.text[:50]})"}
+    except Exception as e:
+        return {"error": f"Hugging Face Linkage Failure: {str(e)}"}
