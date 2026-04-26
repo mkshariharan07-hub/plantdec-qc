@@ -880,7 +880,12 @@ with col_in:
                         
                         status.write("Quantum state entanglement check...")
                         is_h_hint = "healthy" in str(kw.get('disease', '')).lower()
-                        is_p_hint = not is_h_hint and "indeterminate" not in str(kw.get('disease', '')).lower()
+                        # Only hint pathogen if we actually have a disease name that isn't 'healthy' or 'indeterminate'
+                        is_p_hint = False
+                        if kw.get('disease'):
+                            d_str = str(kw.get('disease')).lower()
+                            if "healthy" not in d_str and "indeterminate" not in d_str and "unknown" not in d_str:
+                                is_p_hint = True
                         
                         # Fetch base severity from knowledge matrix
                         d_info = get_disease_info(kw.get('disease', 'healthy'))
@@ -912,9 +917,11 @@ with col_in:
                         
                         # CROSS-VERIFICATION: If AI says Healthy but Quantum says Critical/Severe
                         if ("healthy" in d_name.lower() or "indeterminate" in d_name.lower()) and q.get('score', 1) >= 4:
-                            d_name = "Undiagnosed Pathogen"
-                            d_desc = "High cellular entropy and spectral variance detected. Visible lesions suggest a pathogenic vector not currently indexed in the local mesh."
-                            raw_rx = {"Quarantine": "Isolate the plant immediately to prevent potential spread while a deep-tissue lab analysis is conducted."}
+                            # Only override to Undiagnosed if there is significant visual noise (lap_var)
+                            if q.get('lap_var', 0) > 0.1:
+                                d_name = "Undiagnosed Pathogen"
+                                d_desc = "High cellular entropy and spectral variance detected. Visible lesions suggest a pathogenic vector not currently indexed in the local mesh."
+                                raw_rx = {"Quarantine": "Isolate the plant immediately to prevent potential spread while a deep-tissue lab analysis is conducted."}
 
                         d_lower = d_name.lower()
                         p_cat = "Organic Bio-Stimulant"
@@ -1049,14 +1056,16 @@ CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon',
                 """, unsafe_allow_html=True)
                 
                 if r.get('gpt_advice'):
-                    st.markdown(f"""
-                    <div style='background:rgba(16,185,129,0.1); padding:20px; border-radius:15px; border:1px solid #10b981; margin-top:15px;'>
-                        <h4 style='color:#34d399; margin-top:0;'>🤖 Zenith Remediation Protocol</h4>
-                        <div style='color:#ecfdf5; font-size:0.95rem; line-height:1.6;'>
-                            {r.get('gpt_advice')}
+                    advice = r.get('gpt_advice')
+                    if "insufficient_quota" in str(advice):
+                        st.warning("⚠️ **Remediation Protocol Offline:** Your OpenAI account has run out of credits. Please add funds to your account to enable ChatGPT treatment plans.")
+                    else:
+                        st.markdown(f"""
+                        <div style='background:rgba(16,185,129,0.1); padding:20px; border-radius:15px; border:1px solid #10b981; margin-top:15px;'>
+                            <h4 style='color:#34d399; margin-top:0;'>🤖 Zenith Remediation Protocol</h4>
+                            <div style='font-size:0.95rem; line-height:1.6;'>{advice}</div>
                         </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                        """, unsafe_allow_html=True)
                 
                 if r.get('rx'):
                     st.markdown("<h4 style='color:#6ee7b7;'>Remediation Directives</h4>", unsafe_allow_html=True)
