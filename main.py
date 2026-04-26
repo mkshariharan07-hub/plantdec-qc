@@ -371,16 +371,26 @@ with st.sidebar:
     st.image("https://img.icons8.com/bubbles/200/leaf.png", width=120)
     st.markdown("<h2 class='glow-text'>PLANTPULSE ZENITH</h2>", unsafe_allow_html=True)
     
+    # Check all key status - prioritized: Widget > Env > Secret
+    # Moved to top to ensure availability for all components
+    keys = {
+        "PLANTNET": os.getenv("PLANTNET_API_KEY") or (st.secrets.get("PLANTNET_API_KEY") if "PLANTNET_API_KEY" in st.secrets else None),
+        "KINDWISE": os.getenv("CROP_HEALTH_API_KEY") or (st.secrets.get("CROP_HEALTH_API_KEY") if "CROP_HEALTH_API_KEY" in st.secrets else None),
+        "HUGGINGFACE": os.getenv("HUGGINGFACE_API_KEY") or (st.secrets.get("HUGGINGFACE_API_KEY") if "HUGGINGFACE_API_KEY" in st.secrets else None),
+        "PERENUAL": os.getenv("PERENUAL_API_KEY") or (st.secrets.get("PERENUAL_API_KEY") if "PERENUAL_API_KEY" in st.secrets else None),
+        "IBM_QUANTUM": os.getenv("IBM_QUANTUM_TOKEN") or (st.secrets.get("IBM_QUANTUM_TOKEN") if "IBM_QUANTUM_TOKEN" in st.secrets else None),
+    }
+
     # API KEY ORCHESTRATION
     with st.expander("🔑 Credential Overrides", expanded=False):
-        pn_k = st.text_input("PlantNet API Key", value=os.getenv("PLANTNET_API_KEY") or "", type="password", key="pn_key_input")
-        kw_k = st.text_input("Kindwise API Key", value=os.getenv("CROP_HEALTH_API_KEY") or "", type="password", key="kw_key_input")
-        # Initialize keys dict with current widget values
-        keys = {"PLANTNET": pn_k, "KINDWISE": kw_k}
+        pn_k = st.text_input("PlantNet API Key", value=keys["PLANTNET"] or "", type="password")
+        kw_k = st.text_input("Kindwise API Key", value=keys["KINDWISE"] or "", type="password")
+        if pn_k: keys["PLANTNET"] = pn_k
+        if kw_k: keys["KINDWISE"] = kw_k
     
     with st.expander("🛠 Matrix Configuration", expanded=False):
         q_eng = st.selectbox("Quantum Engine", ["Dynamic (Hybrid)", "Simulator Optimized"])
-        primary_engine = st.selectbox("Primary Disease Engine", ["Hugging Face (Free)", "Kindwise (Paid)", "Pl@ntNet", "Local Mesh"])
+        primary_engine = st.selectbox("Primary Disease Engine", ["Hugging Face (Free)", "Kindwise (Paid)", "Pl@ntNet", "Local Mesh"], index=0)
         api_depth = st.slider("Discovery Depth", 1, 10, 7)
         hard_guess = st.toggle("Hard-Guess Mode", value=True)
         ssl_verify = st.toggle("Verify SSL Certificates", value=False, help="Disable if encountering SSL/Proxy errors on Windows")
@@ -949,7 +959,7 @@ CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon',
 </div>
 """, unsafe_allow_html=True)
         
-        rtabs = st.tabs(["🧪 Pathology", "🧬 Genomics", "📉 Quantum", "🌈 Spectral", "🛡️ Security", "🛒 Purchase", "📄 Reports"])
+        rtabs = st.tabs(["🧪 Pathology", "🌿 Care", "🧬 Genomics", "📉 Quantum", "🌈 Spectral", "🛡️ Security", "🛒 Purchase", "📄 Reports"])
         
         with rtabs[0]:
             col_p1, col_p2 = st.columns([2, 1])
@@ -986,6 +996,26 @@ CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon',
                 st.caption("Thermal metabolic hyperactivity localized.")
                 
         with rtabs[1]:
+            st.markdown("<h4 style='color:#6ee7b7;'>🌿 Botanical Intelligence (Perenual API)</h4>", unsafe_allow_html=True)
+            care = r.get('care', {})
+            if care and isinstance(care, dict):
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.write(f"**Cycle:** {care.get('cycle', 'N/A')}")
+                    st.write(f"**Watering:** {care.get('watering', 'N/A')}")
+                    st.write(f"**Sunlight:** {', '.join(care.get('sunlight', [])) if isinstance(care.get('sunlight'), list) else care.get('sunlight', 'N/A')}")
+                with c2:
+                    st.markdown(f"""
+                    <div style='background:rgba(16,185,129,0.1); padding:15px; border-radius:12px; border:1px solid #10b981;'>
+                        <p style='color:#10b981; font-weight:700; margin-bottom:5px;'>VITALITY PROTOCOL</p>
+                        <p style='font-size:0.85rem;'>Based on Perenual botanical datasets, this specimen requires <b>{care.get('watering', 'standard')}</b> hydration and <b>{care.get('sunlight', ['stable sunlight'])[0]}</b> for optimal cellular regeneration.</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.warning("Botanical care data for this specific variant is localized but currently awaiting peer-review verification.")
+                st.info("General Protocol: Maintain soil pH 6.0-7.0 and ensure adequate nitrogen saturation.")
+                
+        with rtabs[2]:
             st.markdown("<h4 style='color:#6ee7b7;'>🧬 Pathogen Genomic Fingerprint</h4>", unsafe_allow_html=True)
             col_dna1, col_dna2 = st.columns([1, 1])
             with col_dna1:
@@ -1011,7 +1041,7 @@ CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon',
                 st.map(wp_df, size=20, color='#10b981')
             st.button("EXPORT MAVLINK / DJI-SDK WAYPOINTS", use_container_width=True)
             
-        with rtabs[2]:
+        with rtabs[3]:
             st.markdown("<h4 style='color:#6ee7b7;'>Qiskit Enterprise Architecture (V5)</h4>", unsafe_allow_html=True)
             q_data = r.get('q', {})
             
@@ -1059,7 +1089,7 @@ CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon',
             pdf_data = pd.DataFrame(list(top_probs.items()), columns=['Eigenstate Vector', 'Amplitude Probability'])
             st.bar_chart(pdf_data.set_index('Eigenstate Vector'), color="#10b981", height=300)
 
-        with rtabs[3]:
+        with rtabs[4]:
             st.markdown("<h4 style='color:#6ee7b7;'>🌈 Bio-Spectral Channel Analysis</h4>", unsafe_allow_html=True)
             sc1, sc2, sc3 = st.columns(3)
             with sc1:
@@ -1082,14 +1112,14 @@ CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon',
                 st.toast("Bio-Security Alert Dispatched!", icon="🚨")
                 st.success("Regional bio-security updated.")
 
-        with rtabs[4]:
+        with rtabs[5]:
             st.markdown("<h4 style='color:#6ee7b7;'>🛡️ Quantum Bio-Encryption</h4>", unsafe_allow_html=True)
             st.info("Generating unique encryption hashes using quantum entanglement.")
             q_hash = base64.b64encode(os.urandom(24)).decode()
             st.markdown(f"<div style='background:rgba(0,0,0,0.3); padding:20px; border-radius:12px; font-family:monospace; border:1px solid #34d399;'>{q_hash}</div>", unsafe_allow_html=True)
             st.button("REVOKE ACCESS KEYS", width="stretch")
 
-        with rtabs[5]:
+        with rtabs[6]:
             st.markdown("<h4 style='color:#6ee7b7;'>🛒 Purchase Nexus</h4>", unsafe_allow_html=True)
             st.write(f"Prioritizing solutions for **{r.get('p_cat')}**.")
             st.markdown(f"""
@@ -1104,7 +1134,7 @@ CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon',
             for day, action in r.get('timeline', {}).items():
                 st.success(f"**{day}**: {action}")
 
-        with rtabs[6]:
+        with rtabs[7]:
             st.markdown("<h4 style='color:#6ee7b7;'>📄 Clinical Reporting Engine</h4>", unsafe_allow_html=True)
             st.info("The Zenith engine generates encrypted, clinical-grade PDF dossiers including ROI projections and molecular diagnostics.")
             
