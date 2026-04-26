@@ -106,8 +106,8 @@ def predict_with_tflite(img_bgr: np.ndarray, model_path: str, class_indices_path
             "disease": disease_name,
             "plant": plant_name,
             "probability": round(confidence * 100, 1),
-            "description": f"Diagnosis via Edge-TFLite Neural Mesh. Model Confidence: {round(confidence*100,1)}%.",
-            "source": "TFLite Local"
+            "description": f"Diagnosis via Edge Neural Mesh. Model Confidence: {round(confidence*100,1)}%.",
+            "source": "Local Edge AI"
         }
     except Exception as e:
         return {"error": f"TFLite Inference Failure: {str(e)}"}
@@ -578,9 +578,9 @@ def identify_plant_with_plantnet(img_bgr: np.ndarray, api_key: str = None, verif
             if last_raw == "None":
                 last_raw = "No matches found for this specimen."
                     
-        return {"error": f"PlantNet: {last_raw}"}
+        return {"error": f"Botanical Core: {last_raw}"}
     except Exception as e:
-        return {"error": f"PlantNet Root Failure: {str(e)}"}
+        return {"error": f"Botanical Core Root Failure: {str(e)}"}
 
 
 def identify_disease_with_kindwise(img_bgr: np.ndarray, api_key: str = None) -> dict:
@@ -709,15 +709,15 @@ def identify_disease_with_plantnet(img_bgr: np.ndarray, api_key: str = None) -> 
                 return {
                     "disease": common_names[0] if common_names else disease_name,
                     "probability": round(best.get('score', 0) * 100, 1),
-                    "description": f"Diagnosis via Pl@ntNet Disease Matrix. EPPO: {best.get('disease', {}).get('eppoCode', 'N/A')}",
+                    "description": f"Diagnosis via Botanical Disease Matrix. EPPO: {best.get('disease', {}).get('eppoCode', 'N/A')}",
                     "details": best.get('disease', {})
                 }
             else:
-                return {"error": "Pl@ntNet: No pathological vectors identified in specimen."}
+                return {"error": "Botanical Matrix: No pathological vectors identified in specimen."}
         else:
-            return {"error": f"Pl@ntNet Disease API Rejected: HTTP {response.status_code}"}
+            return {"error": f"Botanical Disease Matrix Rejected: HTTP {response.status_code}"}
     except Exception as e:
-        return {"error": f"Pl@ntNet Disease Root Failure: {str(e)}"}
+        return {"error": f"Botanical Disease Root Failure: {str(e)}"}
 
 def remap_disease_with_nyckel(text: str, function_id: str, client_id: str = None, client_secret: str = None) -> str:
     """Remap a disease name to its botanical equivalent using Nyckel Text Classification."""
@@ -793,21 +793,21 @@ def identify_disease_with_huggingface(img_bgr: np.ndarray, api_key: str = None, 
                         disease_name = "Healthy Specimen"
                     return {
                         "disease": disease_name, "plant": plant_name, "probability": score,
-                        "description": f"Diagnosis via Hugging Face Neural Mesh (Sartaj-V5). Model Confidence: {score}%.",
-                        "source": "Hugging Face"
+                        "description": f"Diagnosis via Neural Mesh. Model Confidence: {score}%.",
+                        "source": "Neural AI"
                     }
             elif response.status_code == 503:
                 # Model is loading - wait and retry
                 time.sleep(10)
                 continue
             elif response.status_code == 401:
-                return {"error": "Hugging Face: Unauthorized (Invalid Key)"}
+                return {"error": "Neural Mesh: Unauthorized (Invalid Key)"}
             else:
-                return {"error": f"Hugging Face Rejected: HTTP {response.status_code}"}
+                return {"error": f"Neural Mesh Rejected: HTTP {response.status_code}"}
         
-        return {"error": "Hugging Face: Model failed to wake up after multiple attempts."}
+        return {"error": "Neural Mesh: Model failed to wake up after multiple attempts."}
     except Exception as e:
-        return {"error": f"Hugging Face Root Failure: {str(e)}"}
+        return {"error": f"Neural Mesh Root Failure: {str(e)}"}
 
 # ── Gemini & ChatGPT Zenith Integrations ──────────────────────────────────────
 
@@ -850,11 +850,11 @@ def analyze_with_gemini(img_bgr: np.ndarray, api_key: str = None) -> dict:
             "disease": res.get("disease", "Unknown"),
             "plant": res.get("plant", "Unknown"),
             "probability": res.get("confidence", 0),
-            "description": res.get("description", "Analyzed via Gemini Vision."),
-            "source": "Gemini Flash"
+            "description": res.get("description", "Analyzed via Vision Intelligence Core."),
+            "source": "Vision AI"
         }
     except Exception as e:
-        return {"error": f"Gemini Integration Failure: {str(e)}"}
+        return {"error": f"Vision Integration Failure: {str(e)}"}
 
 def get_chatgpt_advice(plant: str, disease: str, api_key: str = None) -> str:
     """Get professional treatment advice from ChatGPT."""
@@ -862,7 +862,7 @@ def get_chatgpt_advice(plant: str, disease: str, api_key: str = None) -> str:
         api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
     
     if not api_key:
-        return "ChatGPT Treatment Advice: API Key missing."
+        return "Professional Remediation Insights: API Key missing."
 
     try:
         client = OpenAI(api_key=api_key)
@@ -877,5 +877,5 @@ def get_chatgpt_advice(plant: str, disease: str, api_key: str = None) -> str:
         
         return response.choices[0].message.content
     except Exception as e:
-        return f"ChatGPT Treatment Advice Failure: {str(e)}"
+        return f"Professional Remediation Insights Failure: {str(e)}"
 

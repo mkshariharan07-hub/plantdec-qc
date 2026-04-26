@@ -363,19 +363,19 @@ with st.sidebar:
     # Check all key status - prioritized: Widget > Env > Secret
     # Moved to top to ensure availability for all components
     keys = {
-        "PLANTNET": os.getenv("PLANTNET_API_KEY") or (st.secrets.get("PLANTNET_API_KEY") if "PLANTNET_API_KEY" in st.secrets else None),
-        "KINDWISE": os.getenv("CROP_HEALTH_API_KEY") or (st.secrets.get("CROP_HEALTH_API_KEY") if "CROP_HEALTH_API_KEY" in st.secrets else None),
-        "HUGGINGFACE": os.getenv("HUGGINGFACE_API_KEY") or (st.secrets.get("HUGGINGFACE_API_KEY") if "HUGGINGFACE_API_KEY" in st.secrets else None),
-        "PERENUAL": os.getenv("PERENUAL_API_KEY") or (st.secrets.get("PERENUAL_API_KEY") if "PERENUAL_API_KEY" in st.secrets else None),
-        "IBM_QUANTUM": os.getenv("IBM_QUANTUM_TOKEN") or (st.secrets.get("IBM_QUANTUM_TOKEN") if "IBM_QUANTUM_TOKEN" in st.secrets else None),
+        "BOTANICAL_DB": os.getenv("PLANTNET_API_KEY") or (st.secrets.get("PLANTNET_API_KEY") if "PLANTNET_API_KEY" in st.secrets else None),
+        "PATHOGEN_CORE": os.getenv("CROP_HEALTH_API_KEY") or (st.secrets.get("CROP_HEALTH_API_KEY") if "CROP_HEALTH_API_KEY" in st.secrets else None),
+        "NEURAL_MESH": os.getenv("HUGGINGFACE_API_KEY") or (st.secrets.get("HUGGINGFACE_API_KEY") if "HUGGINGFACE_API_KEY" in st.secrets else None),
+        "CARE_PROTOCOLS": os.getenv("PERENUAL_API_KEY") or (st.secrets.get("PERENUAL_API_KEY") if "PERENUAL_API_KEY" in st.secrets else None),
+        "QUANTUM_ENGINE": os.getenv("IBM_QUANTUM_TOKEN") or (st.secrets.get("IBM_QUANTUM_TOKEN") if "IBM_QUANTUM_TOKEN" in st.secrets else None),
     }
 
     # API KEY ORCHESTRATION
     with st.expander("🔑 Credential Overrides", expanded=False):
-        pn_k = st.text_input("PlantNet API Key", value=keys["PLANTNET"] or "", type="password")
-        kw_k = st.text_input("Kindwise API Key", value=keys["KINDWISE"] or "", type="password")
-        if pn_k: keys["PLANTNET"] = pn_k
-        if kw_k: keys["KINDWISE"] = kw_k
+        pn_k = st.text_input("Botanical DB Key", value=keys["BOTANICAL_DB"] or "", type="password")
+        kw_k = st.text_input("Pathogen Core Key", value=keys["PATHOGEN_CORE"] or "", type="password")
+        if pn_k: keys["BOTANICAL_DB"] = pn_k
+        if kw_k: keys["PATHOGEN_CORE"] = kw_k
     
     # TFLite Path Configuration
     TFLITE_MODEL_PATH = os.path.join(os.path.dirname(__file__), "model file", "model_float16_quant.tflite")
@@ -385,9 +385,9 @@ with st.sidebar:
     with st.expander("🛠 Matrix Configuration", expanded=False):
         q_eng = st.selectbox("Quantum Engine", ["Dynamic (Hybrid)", "Simulator Optimized"])
         primary_engine = st.selectbox("Primary Disease Engine", 
-                                    ["Hugging Face (Free)", "Gemini Pro Vision (Fast)", "Kindwise (Paid)", "Local TFLite (Ultra Fast)", "Pl@ntNet", "Local Mesh"], 
+                                    ["Neural Mesh Alpha", "Vision Intelligence Core", "Premium Pathogen Matrix", "Local Edge AI", "Global Botanical Database", "Local Mesh"], 
                                     index=0)
-        use_chatgpt = st.toggle("Enable ChatGPT Treatment Advice", value=True)
+        use_chatgpt = st.toggle("Enable Professional Remediation Insights", value=True)
         api_depth = st.slider("Discovery Depth", 1, 10, 7)
         hard_guess = st.toggle("Hard-Guess Mode", value=True)
         ssl_verify = st.toggle("Verify SSL Certificates", value=False, help="Disable if encountering SSL/Proxy errors on Windows")
@@ -409,9 +409,9 @@ with st.sidebar:
     c_sid = st.session_state.get('last_scan_id', 'None')
     st.write(f"Current Matrix ID: `{c_sid[:8] if c_sid else 'None'}`")
     st.write(f"Neural Mesh: {'🟢 READY' if HAS_LOCAL_MODEL else '🔴 OFFLINE'}")
-    c1 = st.checkbox("PlantNet Key", value=bool(pn_k))
-    c2 = st.checkbox("Kindwise Key", value=bool(kw_k))
-    c3 = st.checkbox("Quantum Key", value=bool(os.getenv("IBM_QUANTUM_TOKEN")))
+    c1 = st.checkbox("Botanical DB", value=bool(pn_k))
+    c2 = st.checkbox("Pathogen Core", value=bool(kw_k))
+    c3 = st.checkbox("Quantum Core", value=bool(os.getenv("IBM_QUANTUM_TOKEN")))
     if not (c1 and c2): st.warning("Diagnostics compromised: Keys missing.")
     
     st.divider()
@@ -423,9 +423,9 @@ with st.sidebar:
             lr = st.session_state.last_results
             st.write(f"**Target:** {lr.get('plant')}")
             st.write(f"**Confidence Matrix:**")
-            st.caption(f"• PlantNet: {lr.get('pn_score', 0)}%")
+            st.caption(f"• Botanical DB: {lr.get('pn_score', 0)}%")
             st.caption(f"• Neural Mesh: {lr.get('local_score', 0)}%")
-            st.caption(f"• Host Inference: {lr.get('host_score', 0)}%")
+            st.caption(f"• Bio-Inference: {lr.get('host_score', 0)}%")
             st.write(f"**Timestamp:** {lr.get('timestamp')}")
         else:
             st.info("No scan data in session.")
@@ -469,14 +469,14 @@ with st.sidebar:
     # Check all key status
     # Check all key status - prioritized: Widget > Env > Secret
     keys = {
-        "PLANTNET": pn_k or os.getenv("PLANTNET_API_KEY") or (st.secrets.get("PLANTNET_API_KEY") if "PLANTNET_API_KEY" in st.secrets else None),
-        "KINDWISE": kw_k or os.getenv("CROP_HEALTH_API_KEY") or (st.secrets.get("CROP_HEALTH_API_KEY") if "CROP_HEALTH_API_KEY" in st.secrets else None),
-        "HUGGINGFACE": os.getenv("HUGGINGFACE_API_KEY") or (st.secrets.get("HUGGINGFACE_API_KEY") if "HUGGINGFACE_API_KEY" in st.secrets else None),
-        "PERENUAL": os.getenv("PERENUAL_API_KEY") or (st.secrets.get("PERENUAL_API_KEY") if "PERENUAL_API_KEY" in st.secrets else None),
-        "IBM_QUANTUM": os.getenv("IBM_QUANTUM_TOKEN") or (st.secrets.get("IBM_QUANTUM_TOKEN") if "IBM_QUANTUM_TOKEN" in st.secrets else None),
-        "NYCKEL_FID": st.session_state.get("nfid_over") or os.getenv("NYCKEL_FID"),
-        "NYCKEL_ID": st.session_state.get("nid_over") or os.getenv("NYCKEL_ID"),
-        "NYCKEL_SECRET": st.session_state.get("nsec_over") or os.getenv("NYCKEL_SECRET")
+        "BOTANICAL_DB": pn_k or os.getenv("PLANTNET_API_KEY") or (st.secrets.get("PLANTNET_API_KEY") if "PLANTNET_API_KEY" in st.secrets else None),
+        "PATHOGEN_CORE": kw_k or os.getenv("CROP_HEALTH_API_KEY") or (st.secrets.get("CROP_HEALTH_API_KEY") if "CROP_HEALTH_API_KEY" in st.secrets else None),
+        "NEURAL_MESH": os.getenv("HUGGINGFACE_API_KEY") or (st.secrets.get("HUGGINGFACE_API_KEY") if "HUGGINGFACE_API_KEY" in st.secrets else None),
+        "CARE_PROTOCOLS": os.getenv("PERENUAL_API_KEY") or (st.secrets.get("PERENUAL_API_KEY") if "PERENUAL_API_KEY" in st.secrets else None),
+        "QUANTUM_ENGINE": os.getenv("IBM_QUANTUM_TOKEN") or (st.secrets.get("IBM_QUANTUM_TOKEN") if "IBM_QUANTUM_TOKEN" in st.secrets else None),
+        "REMAP_FID": st.session_state.get("nfid_over") or os.getenv("NYCKEL_FID"),
+        "REMAP_ID": st.session_state.get("nid_over") or os.getenv("NYCKEL_ID"),
+        "REMAP_SECRET": st.session_state.get("nsec_over") or os.getenv("NYCKEL_SECRET")
     }
     
     for k, v in keys.items():
@@ -490,8 +490,8 @@ with st.sidebar:
             
     with st.sidebar.expander("🛠️ Manual Key Override"):
         st.caption("Overrides .env / Secrets")
-        pk = st.text_input("New PlantNet Key", type="password", key="pk_over")
-        ck = st.text_input("New Kindwise Key", type="password", key="ck_over")
+        pk = st.text_input("New Botanical Key", type="password", key="pk_over")
+        ck = st.text_input("New Pathogen Key", type="password", key="ck_over")
         st.markdown("---")
         st.caption("🧬 Neural Remap (Nyckel)")
         nfid = st.text_input("Nyckel Function ID", key="nfid_over")
@@ -508,8 +508,8 @@ with st.sidebar:
             st.rerun()
 
     # Heartbeat Check
-    if st.sidebar.button("📡 TEST PLANTNET UPLINK"):
-        pn_key = keys.get("PLANTNET")
+    if st.sidebar.button("📡 TEST BOTANICAL UPLINK"):
+        pn_key = keys.get("BOTANICAL_DB")
         if not pn_key:
             st.sidebar.error("Key Missing")
         else:
@@ -523,8 +523,8 @@ with st.sidebar:
             except Exception as e:
                 st.sidebar.error(f"Uplink Failed: {e}")
 
-    if st.sidebar.button("📡 TEST HUGGINGFACE UPLINK"):
-        hf_key = keys.get("HUGGINGFACE")
+    if st.sidebar.button("📡 TEST NEURAL UPLINK"):
+        hf_key = keys.get("NEURAL_MESH")
         if not hf_key or "your_token" in hf_key:
             st.sidebar.error("Key Missing/Invalid")
         else:
@@ -550,8 +550,8 @@ with st.sidebar:
         except:
             st.sidebar.error("Heartbeat: OFFLINE (Network Blocked)")
 
-    if st.sidebar.button("📡 TEST PLANTNET DISEASE UPLINK"):
-        pn_key = keys.get("PLANTNET")
+    if st.sidebar.button("📡 TEST PATHOGEN UPLINK"):
+        pn_key = keys.get("BOTANICAL_DB")
         if not pn_key:
             st.sidebar.error("Key Missing")
         else:
@@ -560,7 +560,7 @@ with st.sidebar:
                 # Empty POST just to check key validity
                 test_res = requests.post(test_url, timeout=10)
                 if test_res.status_code in [200, 400]: # 400 is fine as we sent no images
-                    st.sidebar.success("Disease Uplink Stable")
+                    st.sidebar.success("Pathogen Uplink Stable")
                 else:
                     st.sidebar.error(f"Rejected: {test_res.status_code}")
             except Exception as e:
@@ -613,15 +613,15 @@ with col_in:
                     st.session_state.last_results['timestamp'] = datetime.datetime.now().strftime("%H:%M:%S")
                     
                     try:
-                        status.write("Phase 1: PlantNet Botanical Uplink...")
-                        pn = identify_plant_with_plantnet(frame, api_key=keys.get("PLANTNET"), verify_ssl=ssl_verify)
+                        status.write("Phase 1: Botanical Core Uplink...")
+                        pn = identify_plant_with_plantnet(frame, api_key=keys.get("BOTANICAL_DB"), verify_ssl=ssl_verify)
                         
                         if "error" in pn:
-                            status.write(f"⚠️ PlantNet: {pn['error']}")
+                            status.write(f"⚠️ Botanical Core: {pn['error']}")
                             # If no key, maybe Kindwise or Local Mesh can help
                         else:
                             common_name = pn.get('common_names')[0] if pn.get('common_names') else pn.get('scientific_name')
-                            status.write(f"✅ PlantNet: {common_name} ({pn.get('score')}% confidence)")
+                            status.write(f"✅ Botanical Core: {common_name} ({pn.get('score')}% confidence)")
                         
                         # LOG FOR DEEP-DEBUG
                         log_path = os.path.join(os.path.dirname(__file__), "api_log.txt")
@@ -635,13 +635,13 @@ with col_in:
                         inferred_plant = None
 
                         if is_weak or unstable:
-                            status.write("PlantNet inconclusive. Scaling to Pathogen Path-Mining...")
+                            status.write("Botanical Core inconclusive. Scaling to Pathogen Matrix...")
                             # 1. Higher-Depth Pathogen Identification
-                            kw = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
+                            kw = identify_disease_with_kindwise(frame, api_key=keys.get("PATHOGEN_CORE"))
                             
                             # Pathogen AI Fallback for Host Extraction
                             if "error" in kw and HAS_LOCAL_MODEL:
-                                status.write("🛰️ Cloud Health offline. Engaging Pathogen AI for signature match...")
+                                status.write("🛰️ Cloud Health offline. Engaging Neural Matrix for signature match...")
                                 local_res = predict_image(frame, local_model, local_scaler)
                                 kw = {
                                     "disease": local_res.get('disease'),
@@ -758,43 +758,43 @@ with col_in:
                         active_engine = primary_engine
                         
                         # LOGIC A: TFLite Species Validation
-                        if primary_engine == "Local TFLite (Ultra Fast)":
+                        if primary_engine == "Local Edge AI":
                             # Check if the detected plant is supported by the TFLite model
                             if not any(s in target_species or s in target_common for s in tflite_supported):
-                                status.write("⚠️ TFLite model lacks species coverage. Routing to Cloud Matrix...")
-                                active_engine = "Kindwise (Paid)" if keys.get("KINDWISE") else "Hugging Face (Free)"
+                                status.write("⚠️ Neural model lacks species coverage. Routing to Cloud Matrix...")
+                                active_engine = "Premium Pathogen Matrix" if keys.get("KINDWISE") else "Neural Mesh Alpha"
                         
                         # LOGIC B: Tropical Species Optimization
-                        if any(s in target_species or s in target_common for s in tropical_species) and active_engine == "Hugging Face (Free)":
+                        if any(s in target_species or s in target_common for s in tropical_species) and active_engine == "Neural Mesh Alpha":
                             if keys.get("KINDWISE"):
-                                status.write("✨ Species Optimization: Switching to Kindwise Tropical Engine...")
-                                active_engine = "Kindwise (Paid)"
+                                status.write("✨ Species Optimization: Switching to Optimized Tropical Engine...")
+                                active_engine = "Premium Pathogen Matrix"
                         
                         kw = {"error": "initialization"}
                         
-                        if active_engine == "Hugging Face (Free)":
-                            kw = identify_disease_with_huggingface(frame, api_key=keys.get("HUGGINGFACE"), verify_ssl=ssl_verify)
-                        elif active_engine == "Gemini Pro Vision (Fast)":
+                        if active_engine == "Neural Mesh Alpha":
+                            kw = identify_disease_with_huggingface(frame, api_key=keys.get("NEURAL_MESH"), verify_ssl=ssl_verify)
+                        elif active_engine == "Vision Intelligence Core":
                             kw = analyze_with_gemini(frame, api_key=os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY"))
-                        elif active_engine == "Kindwise (Paid)":
-                            kw = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
-                        elif active_engine == "Local TFLite (Ultra Fast)":
+                        elif active_engine == "Premium Pathogen Matrix":
+                            kw = identify_disease_with_kindwise(frame, api_key=keys.get("PATHOGEN_CORE"))
+                        elif active_engine == "Local Edge AI":
                             from utils import predict_with_tflite
                             kw = predict_with_tflite(frame, TFLITE_MODEL_PATH, TFLITE_JSON_PATH)
-                        elif active_engine == "Pl@ntNet":
-                            kw = identify_disease_with_plantnet(frame, api_key=keys.get("PLANTNET"))
+                        elif active_engine == "Global Botanical Database":
+                            kw = identify_disease_with_plantnet(frame, api_key=keys.get("BOTANICAL_DB"))
                         
                         # MULTI-CLOUD PATHOGEN FALLBACK (Logic-based fallback chain)
                         if "error" in kw or not kw.get('disease'):
                             # If primary/optimized engine fails, try the others in order
-                            if active_engine != "Kindwise (Paid)" and keys.get("KINDWISE"):
-                                status.write("Attempting Kindwise Matrix...")
-                                kw_res = identify_disease_with_kindwise(frame, api_key=keys.get("KINDWISE"))
+                            if active_engine != "Premium Pathogen Matrix" and keys.get("PATHOGEN_CORE"):
+                                status.write("Attempting Cloud Matrix...")
+                                kw_res = identify_disease_with_kindwise(frame, api_key=keys.get("PATHOGEN_CORE"))
                                 if "error" not in kw_res: kw = kw_res
                                 
-                            if ("error" in kw or not kw.get('disease')) and active_engine != "Hugging Face (Free)":
-                                status.write("Switching to Hugging Face AI...")
-                                hf_res = identify_disease_with_huggingface(frame, api_key=keys.get("HUGGINGFACE"), verify_ssl=ssl_verify)
+                            if ("error" in kw or not kw.get('disease')) and active_engine != "Neural Mesh Alpha":
+                                status.write("Switching to Neural Mesh...")
+                                hf_res = identify_disease_with_huggingface(frame, api_key=keys.get("NEURAL_MESH"), verify_ssl=ssl_verify)
                                 if "error" not in hf_res: kw = hf_res
                         
                         # PATHOGEN AI FALLBACK (Local Mesh)
@@ -936,9 +936,9 @@ with col_in:
                         ch, cw = h//2, w//2
                         res["micro_img"] = frame[max(0, ch-128):min(h, ch+128), max(0, cw-128):min(w, cw+128)]
 
-                        # 6. ChatGPT Professional Insights
+                        # 6. Professional Remediation Insights
                         if use_chatgpt and "healthy" not in d_name.lower():
-                            status.write("Consulting ChatGPT Botanical Expert...")
+                            status.write("Consulting Botanical Expert Core...")
                             gpt_advice = get_chatgpt_advice(c_name, d_name)
                             res["gpt_advice"] = gpt_advice
                         else:
@@ -1010,7 +1010,7 @@ CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon',
                 if r.get('gpt_advice'):
                     st.markdown(f"""
                     <div style='background:rgba(16,185,129,0.1); padding:20px; border-radius:15px; border:1px solid #10b981; margin-top:15px;'>
-                        <h4 style='color:#34d399; margin-top:0;'>🤖 AI Expert Treatment Plan</h4>
+                        <h4 style='color:#34d399; margin-top:0;'>🤖 Zenith Remediation Protocol</h4>
                         <div style='color:#ecfdf5; font-size:0.95rem; line-height:1.6;'>
                             {r.get('gpt_advice')}
                         </div>
