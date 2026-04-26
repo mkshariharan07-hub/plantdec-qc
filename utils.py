@@ -249,6 +249,18 @@ DISEASE_INFO: Dict[str, Dict] = {
         "emoji":    "🟠",
         "tips":     "Avoid overhead watering. Apply copper-based bactericide. Rotate crops to non-cucurbits.",
     },
+    "apple_scab": {
+        "severity": "high",
+        "color":    "#ef4444",
+        "emoji":    "🔴",
+        "tips":     "Rake and destroy fallen leaves. Apply fungicide (captan or sulfur) during green tip and petal fall stages.",
+    },
+    "scab": {
+        "severity": "high",
+        "color":    "#ef4444",
+        "emoji":    "🔴",
+        "tips":     "Prune infected branches. Use resistant cultivars. Apply protective fungicides preventatively.",
+    },
 }
 
 # BOTANICAL CROSS-REFERENCE MATRIX

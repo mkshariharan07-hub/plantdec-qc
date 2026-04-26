@@ -783,7 +783,7 @@ with col_in:
                                 "disease": p_ai_disease,
                                 "plant": l_res.get('plant', pn.get('scientific_name')),
                                 "probability": l_res.get('confidence', 0),
-                                "description": f"Diagnosis via local Neural Mesh. Visual pattern matches {l_res.get('disease')}{diag_suffix}. Recommended: Verify via botanical lab if symptoms persist.",
+                                "description": f"Diagnosis: {p_ai_disease}. Analysis indicates visual alignment with pathogenic markers.",
                                 "treatment": {"Primary Protocol": l_res.get('tips', 'Isolate and monitor.')}
                             }
                         
@@ -862,7 +862,7 @@ with col_in:
                         # Logic-based Risk Matrix (Replacing Random)
                         d_name_l = kw.get('disease', '').lower()
                         rm = {"Fungal": random.randint(5, 15), "Viral": random.randint(2, 8), "Bacterial": random.randint(5, 12), "Nutrient": random.randint(10, 25)}
-                        if "fungal" in d_name_l or "blight" in d_name_l or "mold" in d_name_l or "rust" in d_name_l or "mildew" in d_name_l:
+                        if "fungal" in d_name_l or "blight" in d_name_l or "mold" in d_name_l or "rust" in d_name_l or "mildew" in d_name_l or "scab" in d_name_l:
                             rm["Fungal"] = random.randint(75, 98)
                         elif "viral" in d_name_l or "virus" in d_name_l or "mosaic" in d_name_l:
                             rm["Viral"] = random.randint(70, 95)
