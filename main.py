@@ -750,13 +750,23 @@ with col_in:
                         # 3. Pathogen Phase
                         status.write(f"Engaging Primary Engine: {primary_engine}...")
                         
-                        # INTELLIGENT ENGINE SWITCHER (Optimization for Tropical Species)
+                        # INTELLIGENT ENGINE SWITCHER
                         target_species = str(pn.get('scientific_name', '')).lower()
+                        target_common = str(pn.get('common_names', [''])[0]).lower()
                         tropical_species = ["psidium", "mangifera", "guava", "mango", "hibiscus", "aloe", "papaya"]
+                        tflite_supported = ["apple", "blueberry", "cherry", "corn", "grape", "orange", "peach", "pepper", "potato", "raspberry", "soybean", "squash", "strawberry", "tomato"]
                         
-                        # If tropical species detected but primary is HF (which lacks tropical data), switch to Kindwise if available
                         active_engine = primary_engine
-                        if any(s in target_species for s in tropical_species) and primary_engine == "Hugging Face (Free)":
+                        
+                        # LOGIC A: TFLite Species Validation
+                        if primary_engine == "Local TFLite (Ultra Fast)":
+                            # Check if the detected plant is supported by the TFLite model
+                            if not any(s in target_species or s in target_common for s in tflite_supported):
+                                status.write("⚠️ TFLite model lacks species coverage. Routing to Cloud Matrix...")
+                                active_engine = "Kindwise (Paid)" if keys.get("KINDWISE") else "Hugging Face (Free)"
+                        
+                        # LOGIC B: Tropical Species Optimization
+                        if any(s in target_species or s in target_common for s in tropical_species) and active_engine == "Hugging Face (Free)":
                             if keys.get("KINDWISE"):
                                 status.write("✨ Species Optimization: Switching to Kindwise Tropical Engine...")
                                 active_engine = "Kindwise (Paid)"

@@ -76,17 +76,19 @@ def predict_with_tflite(img_bgr: np.ndarray, model_path: str, class_indices_path
         confidence = float(output_data[best_idx])
         
         # Map Class
-        label = str(best_idx)
+        label = f"Class {best_idx}"
         if os.path.exists(class_indices_path):
             import json
             with open(class_indices_path, 'r') as f:
                 indices = json.load(f)
-                # Reverse mapping (assuming index: name or name: index)
-                # Common format is {"className": index}
-                for name, idx in indices.items():
-                    if str(idx) == str(best_idx):
-                        label = name
-                        break
+                # Handle both formats: {"name": 0} and {"0": "name"}
+                if str(best_idx) in indices:
+                    label = indices[str(best_idx)]
+                else:
+                    for name, idx in indices.items():
+                        if str(idx) == str(best_idx):
+                            label = name
+                            break
         
         # Parse label (e.g., 'Apple___Scab' -> 'Scab')
         plant_name, disease_name = "Specimen", label
