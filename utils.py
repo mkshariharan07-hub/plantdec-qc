@@ -310,19 +310,21 @@ _FALLBACK_INFO = {
 
 
 def get_disease_info(disease: str) -> dict:
-    """
-    Lookup disease metadata by fuzzy key match.
-    Falls back gracefully if disease is unknown.
-
-    Args:
-        disease: Raw disease string (e.g. 'Early_blight', 'Late blight').
-    Returns:
-        Dict with keys: severity, color, emoji, tips.
-    """
+    """Lookup disease metadata by fuzzy key match with high-severity priority."""
     key = disease.lower().replace(" ", "_")
+    
+    # Priority 1: Exact or direct substring match for high-severity keywords
+    for high_risk in ["scab", "blight", "virus", "rust", "mold"]:
+        if high_risk in key:
+            for k, v in DISEASE_INFO.items():
+                if high_risk in k:
+                    return v
+                    
+    # Priority 2: General fuzzy match
     for k, v in DISEASE_INFO.items():
         if k in key or key in k:
             return v
+            
     return _FALLBACK_INFO
 
 
