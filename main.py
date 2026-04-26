@@ -313,22 +313,15 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
         
         # BIOLOGICAL OVERRIDES (AI Hints)
         if is_pathogen_hint:
-            min_risk = 3
-            if base_severity == "medium": min_risk = 3
-            if base_severity == "high": min_risk = 4
-            if lap_var > 0.08 or necrosis_ratio > 0.03: min_risk = max(min_risk, 4)
-            score = max(score, min_risk)
+            score = max(score, 3) # Force diseased
         
         if is_healthy_hint:
-            # AI says it's healthy. If we see major necrosis, we might move to Incipient (2).
-            # Otherwise, we force it to Optimal (1).
-            if necrosis_ratio > 0.04 or lap_var > 0.25:
-                score = 2 # Incipient (Minor physical damage/spots)
-            else:
-                score = 1 # Optimal (Healthy)
+            if lap_var > 0.15 or necrosis_ratio > 0.05: score = 2
+            else: score = 1 
 
-        labels = ["Optimal", "Incipient", "Moderate", "Severe", "Critical"]
-        q_data.update({"score": score, "label": labels[min(4, score-1)]})
+        # Binary Status Mapping
+        status_label = "HEALTHY" if score <= 1 else "DISEASED"
+        q_data.update({"score": score, "label": status_label})
         return q_data
 
     except Exception as e:
@@ -345,10 +338,11 @@ def analyze_severity_quantum(img: np.ndarray, backend_pref: str, is_healthy_hint
         if is_healthy_hint:
             f_score = 1 if lap_var < 0.1 else 2
             
-        labels = ["Optimal", "Incipient", "Moderate", "Severe", "Critical"]
+        # Binary Status Mapping
+        status_label = "HEALTHY" if f_score <= 1 else "DISEASED"
         return {
             "score": f_score, 
-            "label": labels[min(4, f_score-1)], 
+            "label": status_label, 
             "prob": {"10101010": 1.0}, 
             "backend": "bio-core-fallback", 
             "entanglement": 0, 
@@ -572,6 +566,7 @@ with st.sidebar:
 # MAIN UI
 # ===============================
 st.markdown("<h1 style='text-align:center; font-size: 3.5rem;' class='glow-text'>🌿 PlantPulse <span style='color:white'>Zenith</span></h1>", unsafe_allow_html=True)
+
 st.markdown("<p style='text-align:center; opacity:0.6; letter-spacing:2px;'>ENTERPRISE BOTANICAL INTELLIGENCE & QUANTUM ANALYTICS</p>", unsafe_allow_html=True)
 
 col_in, col_out = st.columns([1, 1], gap="large")
@@ -973,12 +968,13 @@ CO2 Credit Score: <span style="color:#10b981; font-weight:700;">{r.get('carbon',
 
 <div style="display:flex; justify-content:center; align-items:center; background: rgba(0,0,0,0.2); padding: 12px 18px; border-radius: 14px; border: 1px solid rgba(16,185,129,0.1);">
 <div style="text-align:center;">
-<p class="metric-title" style="font-size: 0.65rem; margin-bottom: 5px;">Specimen Risk Level</p>
-<span class="badge badge-{'critical' if r.get('q', {}).get('score', 3) > 3 else 'warning' if r.get('q', {}).get('score', 3) >= 2 else 'optimal'}" style="font-size: 1.2rem; padding: 10px 25px; box-shadow: 0 0 30px rgba(16,185,129,0.3);">
-{f"{r.get('q', {}).get('label', 'Baseline').upper()} RISK" if not is_unknown else "SYNCING..."}
+<p class="metric-title" style="font-size: 0.65rem; margin-bottom: 5px;">Specimen Status</p>
+<span class="badge badge-{'optimal' if r.get('q', {}).get('label') == 'HEALTHY' else 'critical'}" style="font-size: 1.5rem; padding: 12px 35px; box-shadow: 0 0 30px rgba(16,185,129,0.3) if r.get('q', {{}}).get('label') == 'HEALTHY' else 0 0 30px rgba(239,68,68,0.3); letter-spacing: 2px; font-weight: 900;">
+{r.get('q', {}).get('label', 'INDETERMINATE')}
 </span>
 </div>
 </div>
+
 </div>
 """, unsafe_allow_html=True)
         
